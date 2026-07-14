@@ -402,6 +402,19 @@
       <span class="muted" style="font-size:12.5px">Endringer gjelder fra bot-ens neste syklus.</span>
     </div>
     <div class="panel">
+      <h2>Bekreftelses-e-post (tekst)</h2>
+      <div class="muted" style="font-size:13px;margin-bottom:12px">Rediger teksten i bekreftelsen kunden får. La et felt stå tomt for å bruke standardteksten. Plassholdere: <b>{navn}</b> = kundens fornavn, <b>{timer}</b> = avbestillingsfrist i timer.</div>
+      <div class="field"><label>Emne</label><input id="emc-subject" placeholder="Bekreftelse: EU-kontroll – Supero Performance AS"></div>
+      <div class="field"><label>Overskrift</label><input id="emc-heading" placeholder="Timen din er bekreftet"></div>
+      <div class="field"><label>Ingress</label><textarea id="emc-intro" rows="2" placeholder="Hei {navn}, takk for din bestilling. Timen din for EU-kontroll er bekreftet."></textarea></div>
+      <div class="field"><label>«Ta med»-linje</label><textarea id="emc-bring" rows="2" placeholder="Vognkort del 1 og bilnøkkel. Du må vente på stedet under kontrollen og ta med bilen når den er ferdig (tar ca. 45 minutter)."></textarea></div>
+      <div class="field"><label>Vilkår</label><textarea id="emc-policy" rows="3" placeholder="Timen er bindende. Ønsker du å endre eller avbestille, gi beskjed senest {timer} timer før timen …"></textarea></div>
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:4px">
+        <button class="btn primary" id="saveEmailContent">Lagre e-posttekst</button>
+        <span class="muted" style="font-size:12.5px">Send en testmail under for å se resultatet.</span>
+      </div>
+    </div>
+    <div class="panel">
       <h2>Send testmail</h2>
       <div class="muted" style="font-size:13px;margin-bottom:12px">Sender en eksempel-bekreftelse. Boten sender den ved neste sjekk (innen få minutter).</div>
       <div class="inline">
@@ -588,6 +601,13 @@
       if(EMAIL.test_pending) st="Testmail står i kø – sendes ved neste bot-syklus.";
       else if(EMAIL.test_result) st="Siste test: "+EMAIL.test_result;
       $("em-test-status").textContent=st;
+      try{ const sr=await api("settings_get"); const S=sr.settings||{};
+        $("emc-subject").value=S["content.email_confirm_subject"]||"";
+        $("emc-heading").value=S["content.email_confirm_heading"]||"";
+        $("emc-intro").value=S["content.email_confirm_intro"]||"";
+        $("emc-bring").value=S["content.email_confirm_bring"]||"";
+        $("emc-policy").value=S["content.email_confirm_policy"]||"";
+      }catch(e2){}
     }catch(e){ toast("Kunne ikke laste e-postinnstillinger","bad"); }
   }
   $("saveEmail").onclick=async()=>{
@@ -617,6 +637,18 @@
         $("em-test-status").textContent="Testmail står i kø – sendes ved neste bot-syklus (innen få minutter)."; }
       else toast(r.error==="e-post"?"Ugyldig e-post":"Kunne ikke sende test","bad"); }
     catch(e){ toast("Feil ved testsending","bad"); }
+  };
+  $("saveEmailContent").onclick=async()=>{
+    const items=[
+      ["content.email_confirm_subject",$("emc-subject").value.trim()],
+      ["content.email_confirm_heading",$("emc-heading").value.trim()],
+      ["content.email_confirm_intro",$("emc-intro").value.trim()],
+      ["content.email_confirm_bring",$("emc-bring").value.trim()],
+      ["content.email_confirm_policy",$("emc-policy").value.trim()],
+    ];
+    try{ for(const it of items){ await api("settings_set",{key:it[0],value:it[1]}); }
+      toast("E-posttekst lagret"); }
+    catch(e){ toast("Kunne ikke lagre e-posttekst","bad"); }
   };
 
   // ── bookings ──

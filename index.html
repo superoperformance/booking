@@ -188,8 +188,12 @@
   .day{aspect-ratio:1;border:1px solid transparent;border-radius:11px;background:var(--card-2);
     color:var(--fg);font-family:var(--mono);font-size:14px;cursor:pointer;position:relative;
     display:grid;place-items:center;transition:.15s;font-weight:500}
-  .day:hover:not(.off){border-color:var(--red);transform:translateY(-1px)}
+  .day:hover:not(.off):not(.full){border-color:var(--red);transform:translateY(-1px)}
   .day.off{color:var(--disabled);background:transparent;cursor:not-allowed}
+  .day.full{color:var(--fg-soft);background:var(--card-2);border-color:var(--line-2);
+    cursor:not-allowed;padding-bottom:10px;opacity:.92}
+  .day.full .fulltag{position:absolute;bottom:5px;left:0;right:0;text-align:center;font-size:8px;
+    letter-spacing:.05em;text-transform:uppercase;font-weight:700;color:var(--full);font-family:var(--sans)}
   .day.sel{background:var(--red);color:#fff;border-color:var(--red);box-shadow:0 6px 16px -6px var(--red-glow)}
   .day.today::after{content:"";position:absolute;bottom:6px;width:4px;height:4px;border-radius:50%;
     background:var(--red)}
@@ -548,12 +552,17 @@
     for(let dd=1;dd<=dim;dd++){
       const cell=new Date(view.getFullYear(),view.getMonth(),dd);
       const ds=dstr(cell);
-      const open=!!AVAIL[ds];                       // bookable only if backend offers slots
-      const el=document.createElement(open?"button":"div");
-      el.className="day";el.textContent=dd;
+      const dayData=AVAIL[ds];
+      const open=!!dayData;                          // backend offers this day
+      const totalLeft=open?(dayData.slots||[]).reduce((a,s)=>a+(s.left||0),0):0;
+      const full=open&&totalLeft===0;                // offered but every slot is booked
+      const clickable=open&&!full;
+      const el=document.createElement(clickable?"button":"div");
+      el.className="day"+(full?" full":"");
+      el.innerHTML=dd+(full?'<small class="fulltag">Fullt</small>':'');
       if(cell.getTime()===TODAY.getTime())el.classList.add("today");
-      if(!open){el.classList.add("off");}
-      else{
+      if(!open)el.classList.add("off");
+      if(clickable){
         if(state.dateStr===ds)el.classList.add("sel");
         el.addEventListener("click",()=>{state.date=cell;state.dateStr=ds;renderMonth();openDay(cell,ds);});
       }
