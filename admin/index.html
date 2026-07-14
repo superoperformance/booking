@@ -85,24 +85,38 @@
   .stat.hot .num{color:var(--red)}
   .stat .lbl{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-top:2px}
   .daygroup{margin-bottom:14px;border:1px solid var(--line);border-radius:14px;overflow:hidden}
-  .dayhead{display:flex;justify-content:space-between;align-items:center;padding:11px 16px;background:var(--panel2);border-bottom:1px solid var(--line)}
+  .dayhead{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:var(--panel2);cursor:pointer;user-select:none}
+  .daygroup.open .dayhead{border-bottom:1px solid var(--line)}
   .dayhead.today{background:var(--red-soft)}
   .dayhead .dname{font-weight:700;font-size:14px}
   .dayhead.today .dname{color:var(--red)}
+  .dright{display:flex;align-items:center;gap:12px}
   .dayhead .dcount{font-size:12px;color:var(--muted);font-family:var(--mono)}
   .dayhead .dcount b{color:var(--fg)}
-  .bkrow{display:grid;grid-template-columns:52px 1fr 78px 92px 84px auto;gap:12px;align-items:center;padding:11px 16px;border-bottom:1px solid var(--line);font-size:13.5px}
-  .bkrow:last-child{border-bottom:none}
-  .bkrow:hover{background:var(--panel2)}
-  .btime{font-weight:600;font-family:var(--mono)}
-  .bcust{display:flex;flex-direction:column;gap:1px;min-width:0}
-  .bcust b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .bplate{font-size:12px;color:var(--muted);font-family:var(--mono)}
-  .bact{display:flex;gap:6px;justify-content:flex-end}
+  .chev{color:var(--muted);font-size:12px;transition:transform .2s}
+  .daygroup.open>.dayhead .chev{transform:rotate(180deg)}
+  .daybody{display:none}
+  .daygroup.open .daybody{display:block}
+  .tgroup{border-bottom:1px solid var(--line)}
+  .tgroup:last-child{border-bottom:none}
+  .tlabel{font-family:var(--mono);font-size:12px;color:var(--muted);padding:8px 16px 2px;font-weight:600}
+  .tcount{color:var(--red);margin-left:6px}
+  .bcard{border-top:1px solid rgba(255,255,255,.04)}
+  .bcard-head{display:grid;grid-template-columns:1fr 74px 84px 18px;gap:10px;align-items:center;padding:10px 16px;cursor:pointer}
+  .bcard-head:hover{background:var(--panel2)}
+  .bname{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bplate{font-size:12px;color:var(--muted);font-family:var(--mono);margin-left:6px}
+  .bcard .chev{font-size:11px;text-align:center}
+  .bcard.open .chev{transform:rotate(180deg)}
+  .bcard-detail{display:none;padding:2px 16px 16px;background:var(--panel2)}
+  .bcard.open .bcard-detail{display:block}
+  .dgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;padding:12px 0}
+  .dcell{display:flex;flex-direction:column;gap:2px;min-width:0}
+  .dcell u{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-decoration:none}
+  .dcell span{font-size:13px;word-break:break-word}
+  .dactions{display:flex;gap:8px;justify-content:flex-end;padding-top:4px;border-top:1px solid var(--line)}
   @media(max-width:660px){
-    .bkrow{grid-template-columns:46px 1fr auto;grid-template-areas:"time cust act";row-gap:6px;column-gap:10px}
-    .btime{grid-area:time}.bcust{grid-area:cust}.bact{grid-area:act;flex-direction:column}
-    .bsrc,.bstat,.bnb{display:none}
+    .bcard-head{grid-template-columns:1fr auto 18px}.bsrc{display:none}
   }
   /* capacity */
   .totalbox{margin-top:14px;padding:12px 16px;border-radius:11px;background:var(--red-soft);border:1px solid var(--red);font-size:14px}
@@ -134,6 +148,9 @@
   .capquick button.on{background:var(--red);border-color:var(--red);color:#fff}
   .slotrow{display:flex;gap:8px;align-items:center;margin-bottom:6px}
   .slotrow input{max-width:80px}
+  .cpday .cmax{font-size:9px;font-weight:700;color:var(--red);margin-top:1px}
+  .emprow{display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid var(--line2);border-radius:9px;margin-bottom:8px;font-size:13.5px}
+  .empnum{width:20px;height:20px;border-radius:50%;background:var(--red);color:#fff;display:grid;place-items:center;font-size:11px;font-weight:700;font-family:var(--mono);flex:none}
   /* modal */
   .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;place-items:center;padding:20px;z-index:50}
   .modal.on{display:grid}
@@ -201,6 +218,17 @@
       <div class="cpdow"><div>Man</div><div>Tir</div><div>Ons</div><div>Tor</div><div>Fre</div><div>Lør</div><div>Søn</div></div>
       <div class="cpgrid" id="cpGrid"></div>
       <div id="cpOverrides"></div>
+    </div>
+    <div class="panel">
+      <h2>Kontrollører</h2>
+      <div class="muted" style="font-size:13px;margin-bottom:12px">Personene som gjør EU-kontroll i Norbits. Bookinger fordeles jevnt mellom dem. For å legge til en tredje, skriv inn navn og deres <b>Norbits-ID</b>.</div>
+      <div id="empList"></div>
+      <div class="inline" style="margin-top:12px">
+        <div class="field"><label>Navn</label><input id="empName" placeholder="F.eks. Ola"></div>
+        <div class="field"><label>Norbits-ID</label><input id="empId" class="mono" placeholder="30" style="max-width:120px"></div>
+        <button class="btn primary sm" id="empAdd">Legg til</button>
+      </div>
+      <div class="muted" style="font-size:12px;margin-top:10px">Norbits-ID er ressurs-/kolonne-nummeret for hver kontrollør i Norbits-kalenderen (Eroll = 3, Eugen = 24). For å ta imot flere biler samtidig, husk å øke «Standard antall kontrollører» øverst.</div>
     </div>
   </div>
 
@@ -283,6 +311,14 @@
     <div class="sub" id="capDaySub"></div>
     <div style="font-size:12px;font-weight:600;margin-bottom:8px">Antall kontrollører denne dagen</div>
     <div class="capquick" id="capQuick"></div>
+    <div class="field" style="margin-top:16px">
+      <label>Maks antall biler totalt denne dagen</label>
+      <div class="inline">
+        <input id="capDayMax" class="mono" type="number" min="0" style="max-width:130px" placeholder="ingen grense">
+        <button class="btn ghost sm" id="capDayMaxSet">Sett</button>
+      </div>
+      <div class="muted" style="font-size:12px;margin-top:4px">Begrens totalt for dagen selv om kapasiteten tillater flere (f.eks. maks 12). Tomt = ingen ekstra grense.</div>
+    </div>
     <details style="margin-top:16px">
       <summary style="cursor:pointer;font-size:13px;color:var(--muted);font-weight:600">Begrens ett enkelt tidspunkt (avansert)</summary>
       <div class="muted" style="font-size:12px;margin:8px 0 10px">Bruk kun hvis ett klokkeslett skal ha færre plasser enn resten av dagen — f.eks. hvis 10:15 er opptatt til noe annet. Tomt = følger dagens antall.</div>
@@ -344,6 +380,7 @@
     try{const res=await api("list");BOOKINGS=(res.bookings||[]).filter(b=>b.status!=="cancelled"||b.pending_action);renderBookings();}
     catch(e){}
   }
+  const openDays=new Set();let bkInit=false;
   function renderBookings(){
     const q=($("search").value||"").toLowerCase();
     const all=BOOKINGS.filter(b=>!q||((b.customer_name||"")+" "+(b.license_plate||"")).toLowerCase().includes(q));
@@ -360,40 +397,64 @@
       `<div class="stat"><span class="num">${wc}</span><span class="lbl">neste 7 dager</span></div>`+
       `<div class="stat"><span class="num">${all.length}</span><span class="lbl">totalt vist</span></div>`;
     const days=Object.keys(byDay).sort();
+    if(!bkInit){ if(days.includes(tk))openDays.add(tk); else{const nx=days.find(k=>k>=tk);openDays.add(nx||days[days.length-1]);} bkInit=true; }
+    if(q)days.forEach(k=>openDays.add(k));
     if(!days.length){$("bkList").innerHTML='<div class="muted" style="padding:24px;text-align:center">Ingen bestillinger.</div>';return;}
     $("bkList").innerHTML=days.map(k=>{
       const rows=byDay[k].sort((a,b)=>String(a.start_time).localeCompare(String(b.start_time)));
       const d=new Date(k+"T12:00:00");const isT=k===tk;
       const active=rows.filter(r=>r.status==="active").length;
-      return `<div class="daygroup">
-        <div class="dayhead${isT?' today':''}">
+      const byTime={};rows.forEach(b=>{const t=new Date(b.start_time);const tt=isNaN(t)?"—":String(t.getHours()).padStart(2,"0")+":"+String(t.getMinutes()).padStart(2,"0");(byTime[tt]=byTime[tt]||[]).push(b);});
+      const body=Object.keys(byTime).sort().map(tt=>{
+        const list=byTime[tt];
+        return `<div class="tgroup"><div class="tlabel">${tt}${list.length>1?` <span class="tcount">${list.length} biler</span>`:""}</div>${list.map(bookingCard).join("")}</div>`;
+      }).join("");
+      return `<div class="daygroup${openDays.has(k)?' open':''}">
+        <div class="dayhead${isT?' today':''}" data-day="${k}">
           <span class="dname">${DAYSLONG[d.getDay()]} ${d.getDate()}. ${MONTHSLONG[d.getMonth()]}${isT?' · i dag':''}</span>
-          <span class="dcount"><b>${active}</b> ${active===1?'time':'timer'}</span>
-        </div>${rows.map(bookingRow).join("")}</div>`;
+          <span class="dright"><span class="dcount"><b>${active}</b> ${active===1?'time':'timer'}</span><span class="chev">▾</span></span>
+        </div>
+        <div class="daybody">${body}</div>
+      </div>`;
     }).join("");
-    bindRowActions();
   }
-  function bookingRow(b){
-    const t=new Date(b.start_time);
-    const time=isNaN(t)?"—":String(t.getHours()).padStart(2,"0")+":"+String(t.getMinutes()).padStart(2,"0");
+  function bookingCard(b){
+    const canAct=b.status==="active"&&!b.pending_action;
     const st=b.pending_action?`<span class="pill pending">${b.pending_action==="cancel"?"avbestilles…":"flyttes…"}</span>`
       :`<span class="pill ${b.status}">${b.status==="active"?"aktiv":b.status==="cancelled"?"avbestilt":b.status}</span>`;
-    const nb=b.norbits_id?'<span class="nb-ok" title="'+esc(b.norbits_id)+'">✓ Norbits</span>':'<span class="nb-no">venter</span>';
-    const canAct=b.status==="active"&&!b.pending_action;
-    return `<div class="bkrow">
-      <span class="btime">${time}</span>
-      <span class="bcust"><b>${esc(b.customer_name)||"—"}</b><span class="bplate">${esc(b.license_plate)||"—"}</span></span>
-      <span class="bsrc"><span class="pill ${b.source}">${b.source==="web"?"nett":"calendly"}</span></span>
-      <span class="bstat">${st}</span>
-      <span class="bnb">${nb}</span>
-      <span class="bact">${canAct?`<button class="btn ghost sm" data-rs="${esc(b.calendly_uuid)}">Flytt</button><button class="btn danger sm" data-cx="${esc(b.calendly_uuid)}">Avbestill</button>`:""}</span>
+    const empName=EMP[String(b.assigned_employee)]||(b.assigned_employee?("ID "+esc(b.assigned_employee)):"—");
+    const created=b.created_at?new Date(b.created_at):null;
+    const nb=b.norbits_id?`<span class="nb-ok mono" title="${esc(b.norbits_id)}">✓ i Norbits</span>`:`<span class="nb-no">venter på Norbits</span>`;
+    return `<div class="bcard" data-uuid="${esc(b.calendly_uuid)}">
+      <div class="bcard-head">
+        <span class="bname"><b>${esc(b.customer_name)||"—"}</b> <span class="bplate">${esc(b.license_plate)||"—"}</span></span>
+        <span class="bsrc"><span class="pill ${b.source}">${b.source==="web"?"nett":"calendly"}</span></span>
+        <span class="bstat">${st}</span>
+        <span class="chev">▾</span>
+      </div>
+      <div class="bcard-detail">
+        <div class="dgrid">
+          <div class="dcell"><u>E-post</u><span>${esc(b.customer_email)||"—"}</span></div>
+          <div class="dcell"><u>Telefon</u><span>${esc(b.phone)||"—"}</span></div>
+          <div class="dcell"><u>Reg.nr</u><span class="mono">${esc(b.license_plate)||"—"}</span></div>
+          <div class="dcell"><u>Kontrollør</u><span>${empName}</span></div>
+          <div class="dcell"><u>Kilde</u><span>${b.source==="web"?"Nettbestilling":"Calendly"}</span></div>
+          <div class="dcell"><u>Norbits</u><span>${nb}</span></div>
+          <div class="dcell"><u>Opprettet</u><span>${created?created.toLocaleString("nb-NO"):"—"}</span></div>
+        </div>
+        ${canAct?`<div class="dactions"><button class="btn ghost sm" data-rs="${esc(b.calendly_uuid)}">Flytt time</button><button class="btn danger sm" data-cx="${esc(b.calendly_uuid)}">Avbestill</button></div>`:""}
+      </div>
     </div>`;
   }
-  function bindRowActions(){
-    $("bkList").querySelectorAll("[data-cx]").forEach(x=>x.onclick=()=>doCancel(x.dataset.cx));
-    $("bkList").querySelectorAll("[data-rs]").forEach(x=>x.onclick=()=>openReschedule(x.dataset.rs));
-  }
   function esc(s){return (s==null?"":String(s)).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]));}
+  let EMP={};
+  document.addEventListener("DOMContentLoaded",()=>{});
+  $("bkList").addEventListener("click",e=>{
+    const rs=e.target.closest("[data-rs]");if(rs){e.stopPropagation();openReschedule(rs.dataset.rs);return;}
+    const cx=e.target.closest("[data-cx]");if(cx){e.stopPropagation();doCancel(cx.dataset.cx);return;}
+    const head=e.target.closest(".bcard-head");if(head){head.parentElement.classList.toggle("open");return;}
+    const dh=e.target.closest(".dayhead");if(dh){const k=dh.dataset.day;if(openDays.has(k))openDays.delete(k);else openDays.add(k);dh.parentElement.classList.toggle("open");return;}
+  });
   async function doCancel(uuid){
     const b=BOOKINGS.find(x=>x.calendly_uuid===uuid);
     if(!confirm(`Avbestille timen for ${b?b.customer_name:""} (${b?b.license_plate:""})?\n\nKunden får en avbestillingse-post, og timen fjernes fra Norbits ved neste syklus.`))return;
@@ -433,6 +494,9 @@
   let SETTINGS={};
   async function loadSettings(){
     try{const r=await api("settings_get");SETTINGS=r.settings||{};
+      try{EMP={};JSON.parse(SETTINGS["booking.employees"]||"[]").forEach(e=>{EMP[String(e.id)]=e.name||("ID "+e.id);});}catch(e){EMP={};}
+      if(BOOKINGS.length)renderBookings();
+      renderEmployees();
       $("capDef").value=SETTINGS["booking.capacity_default"]||"2";
       // slot time options from grid
       updateTotal();
@@ -492,6 +556,7 @@
     const lead=(first.getDay()+6)%7;
     const dim=new Date(cpView.getFullYear(),cpView.getMonth()+1,0).getDate();
     const dov=JSON.parse(SETTINGS["booking.day_overrides"]||"{}");
+    const dmax=JSON.parse(SETTINGS["booking.day_max"]||"{}");
     const defc=parseInt(SETTINGS["booking.capacity_default"]||"2");
     for(let i=0;i<lead;i++)grid.appendChild(document.createElement("div"));
     for(let dd=1;dd<=dim;dd++){
@@ -500,9 +565,9 @@
       const el=document.createElement("div");el.className="cpday";
       if(wd===0||wd===6){el.classList.add("off");el.innerHTML=`<span class="d">${dd}</span>`;}
       else{
-        const ov=dov[ds]!==undefined;const cap=ov?+dov[ds]:defc;
-        if(ov)el.classList.add("ov");if(cap===0)el.classList.add("closed");
-        el.innerHTML=`<span class="d">${dd}</span><span class="c">${cap===0?"Stengt":cap+" ktr"}</span>`;
+        const ov=dov[ds]!==undefined;const cap=ov?+dov[ds]:defc;const hasMax=dmax[ds]!==undefined;
+        if(ov||hasMax)el.classList.add("ov");if(cap===0)el.classList.add("closed");
+        el.innerHTML=`<span class="d">${dd}</span><span class="c">${cap===0?"Stengt":cap+" ktr"}</span>${hasMax?`<span class="cmax">maks ${dmax[ds]}</span>`:""}`;
         el.onclick=()=>openCapDay(ds,cell);
       }
       grid.appendChild(el);
@@ -512,11 +577,14 @@
   function renderCapOverrides(){
     const dov=JSON.parse(SETTINGS["booking.day_overrides"]||"{}");
     const sov=JSON.parse(SETTINGS["booking.slot_overrides"]||"{}");
+    const dmax=JSON.parse(SETTINGS["booking.day_max"]||"{}");
     const items=[];
     Object.keys(dov).sort().forEach(d=>items.push(`<span class="ovtag ${dov[d]==0?'closed':''}">${d}: <b>${dov[d]==0?'Stengt':dov[d]+' kontrollører'}</b><button class="xbtn" data-rmday="${d}">✕</button></span>`));
+    Object.keys(dmax).sort().forEach(d=>items.push(`<span class="ovtag">${d}: <b>maks ${dmax[d]} biler</b><button class="xbtn" data-rmmax="${d}">✕</button></span>`));
     Object.keys(sov).sort().forEach(k=>items.push(`<span class="ovtag">${k}: <b>${sov[k]} plasser</b><button class="xbtn" data-rmslot="${k}">✕</button></span>`));
     $("cpOverrides").innerHTML=items.length?('<div class="ovhead">Spesialregler ('+items.length+')</div>'+items.join("")):'<div class="muted" style="font-size:12.5px;margin-top:16px">Ingen spesialregler — alle hverdager bruker standard kapasitet.</div>';
     $("cpOverrides").querySelectorAll("[data-rmday]").forEach(x=>x.onclick=()=>setDayCap(x.dataset.rmday,""));
+    $("cpOverrides").querySelectorAll("[data-rmmax]").forEach(x=>x.onclick=()=>setDayMax(x.dataset.rmmax,""));
     $("cpOverrides").querySelectorAll("[data-rmslot]").forEach(x=>x.onclick=()=>{const p=x.dataset.rmslot.split(" ");setSlotCap(p[0],p[1],"");});
   }
   function openCapDay(ds,cell){
@@ -542,7 +610,43 @@
     $("capSlotList").querySelectorAll(".cap-slot-set").forEach(b=>b.onclick=()=>{
       const inp=$("capSlotList").querySelector('.cap-slot[data-t="'+b.dataset.t+'"]');setSlotCap(ds,b.dataset.t,inp.value);
     });
+    const dmaxMap=JSON.parse(SETTINGS["booking.day_max"]||"{}");
+    $("capDayMax").value=dmaxMap[ds]!==undefined?dmaxMap[ds]:"";
     $("capModal").classList.add("on");
+  }
+  async function setDayMax(date,val){
+    const cur=JSON.parse(SETTINGS["booking.day_max"]||"{}");
+    if(val===""||val===null||val===undefined)delete cur[date];else cur[date]=parseInt(val);
+    const r=await api("settings_set",{key:"booking.day_max",value:JSON.stringify(cur)});
+    if(r.ok){SETTINGS["booking.day_max"]=JSON.stringify(cur);renderCapCalendar();toast("Oppdatert.","ok");}
+  }
+  $("capDayMaxSet").onclick=()=>{if(capDate)setDayMax(capDate,$("capDayMax").value);};
+  // ── kontrollører (employees) ──
+  function renderEmployees(){
+    let emps=[];try{emps=JSON.parse(SETTINGS["booking.employees"]||"[]");}catch(e){}
+    $("empList").innerHTML=emps.length?emps.map((e,i)=>
+      `<div class="emprow"><span class="empnum">${i+1}</span><b>${esc(e.name)}</b><span class="mono muted" style="margin-left:auto">Norbits-ID ${esc(e.id)}</span>
+       <button class="btn ghost sm" data-rmemp="${esc(e.id)}">Fjern</button></div>`).join(""):'<div class="muted" style="font-size:13px">Ingen kontrollører lagt til.</div>';
+    $("empList").querySelectorAll("[data-rmemp]").forEach(x=>x.onclick=()=>removeEmp(x.dataset.rmemp));
+  }
+  async function saveEmployees(emps){
+    const r=await api("settings_set",{key:"booking.employees",value:JSON.stringify(emps)});
+    await api("settings_set",{key:"booking.employee_ids",value:JSON.stringify(emps.map(e=>String(e.id)))});
+    if(r.ok){SETTINGS["booking.employees"]=JSON.stringify(emps);
+      EMP={};emps.forEach(e=>{EMP[String(e.id)]=e.name;});
+      renderEmployees();if(BOOKINGS.length)renderBookings();toast("Lagret.","ok");}else toast("Feil.","bad");
+  }
+  $("empAdd").onclick=()=>{
+    const name=$("empName").value.trim(),id=$("empId").value.trim();
+    if(!name||!/^\d+$/.test(id))return toast("Skriv inn navn og en gyldig Norbits-ID (tall).","bad");
+    let emps=[];try{emps=JSON.parse(SETTINGS["booking.employees"]||"[]");}catch(e){}
+    if(emps.some(e=>String(e.id)===id))return toast("Denne Norbits-ID-en finnes allerede.","bad");
+    emps.push({id,name});$("empName").value="";$("empId").value="";saveEmployees(emps);
+  };
+  function removeEmp(id){
+    let emps=[];try{emps=JSON.parse(SETTINGS["booking.employees"]||"[]");}catch(e){}
+    if(emps.length<=1)return toast("Du må ha minst én kontrollør.","bad");
+    saveEmployees(emps.filter(e=>String(e.id)!==String(id)));
   }
   $("capCancel").onclick=()=>$("capModal").classList.remove("on");
   $("capRemove").onclick=()=>{if(capDate){setDayCap(capDate,"");$("capModal").classList.remove("on");}};
