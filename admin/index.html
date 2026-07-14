@@ -203,10 +203,27 @@
     <h1>Admin</h1>
     <div class="sub">Bestillinger, kapasitet og blokkering</div>
     <form id="loginForm">
-      <label>Tilgangsnøkkel</label>
-      <input id="key" class="mono" type="password" placeholder="••••••••••••••••" autocomplete="off">
+      <label>E-post</label>
+      <input id="em-login" type="email" placeholder="din@epost.no" autocomplete="username">
+      <label style="margin-top:10px">Passord</label>
+      <input id="pw-login" type="password" placeholder="••••••••" autocomplete="current-password">
       <div class="err" id="loginErr"></div>
       <button class="btn primary" style="width:100%;margin-top:8px" type="submit">Logg inn</button>
+      <div style="display:flex;justify-content:space-between;margin-top:12px;font-size:13px">
+        <a href="#" id="forgotLink" style="color:var(--red);text-decoration:none">Glemt passord?</a>
+        <a href="#" id="keyToggle" style="color:var(--fg-soft);text-decoration:none">Bruk nøkkel</a>
+      </div>
+      <div id="keyRow" style="display:none;margin-top:12px">
+        <label>Tilgangsnøkkel</label>
+        <input id="key" class="mono" type="password" placeholder="••••••••••••••••" autocomplete="off">
+        <button class="btn" style="width:100%;margin-top:8px" type="button" id="keyLogin">Logg inn med nøkkel</button>
+      </div>
+    </form>
+    <form id="resetForm" style="display:none">
+      <label>Nytt passord</label>
+      <input id="pw-new" type="password" placeholder="Minst 8 tegn" autocomplete="new-password">
+      <div class="err" id="resetErr"></div>
+      <button class="btn primary" style="width:100%;margin-top:8px" type="submit">Lagre nytt passord</button>
     </form>
   </div>
 </div>
@@ -452,9 +469,13 @@
 
 <div class="toast" id="toast"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
 (function(){
   const API="https://hmekieedksxxayfgjhgd.supabase.co/functions/v1";
+  const SUPA_URL="https://hmekieedksxxayfgjhgd.supabase.co";
+  const ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhtZWtpZWVka3N4eGF5ZmdqaGdkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNDYzMTUsImV4cCI6MjA5NTYyMjMxNX0.9W_B46OXBTOTm4DKelE7dzmayglTvJyENFLdt0v4aD4";
+  const sb=window.supabase.createClient(SUPA_URL, ANON, {auth:{persistSession:true, autoRefreshToken:true, detectSessionInUrl:true}});
   const $=id=>document.getElementById(id);
   let KEY=sessionStorage.getItem("sp_admin_key")||"";
   let BOOKINGS=[], AVAIL=null;
@@ -465,8 +486,11 @@
   const dayKey=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
 
   async function api(action, extra){
-    const r=await fetch(API+"/admin",{method:"POST",
-      headers:{"Content-Type":"application/json","x-admin-key":KEY},
+    const headers={"Content-Type":"application/json"};
+    try{ const s=await sb.auth.getSession();
+      if(s&&s.data&&s.data.session) headers["Authorization"]="Bearer "+s.data.session.access_token; }catch(e){}
+    if(KEY) headers["x-admin-key"]=KEY;
+    const r=await fetch(API+"/admin",{method:"POST",headers,
       body:JSON.stringify(Object.assign({action},extra||{}))});
     if(r.status===401){logout();throw new Error("unauthorized");}
     return await r.json();
@@ -479,18 +503,60 @@
 
   // ── auth ──
   function showApp(){$("login").style.display="none";$("app").style.display="block";loadBookings();loadSettings();loadBlock();}
-  function logout(){sessionStorage.removeItem("sp_admin_key");KEY="";$("app").style.display="none";$("login").style.display="grid";}
+  function logout(){sessionStorage.removeItem("sp_admin_key");KEY="";try{sb.auth.signOut();}catch(e){}
+    $("app").style.display="none";$("login").style.display="grid";
+    $("loginForm").style.display="block";$("resetForm").style.display="none";}
   $("logout").onclick=logout;
   function applyTheme(t){document.documentElement.dataset.theme=t;
     try{localStorage.setItem("sp_admin_theme",t);}catch(e){}
     document.querySelectorAll("#tt button").forEach(b=>b.classList.toggle("on",b.dataset.t===t));}
   $("tt").addEventListener("click",e=>{const b=e.target.closest("button");if(b)applyTheme(b.dataset.t);});
   applyTheme((function(){try{return localStorage.getItem("sp_admin_theme")||"dark";}catch(e){return "dark";}})());
+  // Email + password login (Supabase Auth)
   $("loginForm").addEventListener("submit",async e=>{
-    e.preventDefault();KEY=$("key").value.trim();$("loginErr").textContent="";
-    try{const res=await api("login");if(res.ok){sessionStorage.setItem("sp_admin_key",KEY);showApp();}
-      else{$("loginErr").textContent="Feil nøkkel.";}}
+    e.preventDefault();$("loginErr").style.color="";$("loginErr").textContent="";
+    const email=($("em-login").value||"").trim(), pw=$("pw-login").value||"";
+    if(!email||!pw){$("loginErr").textContent="Fyll inn e-post og passord.";return;}
+    try{
+      const {data,error}=await sb.auth.signInWithPassword({email,password:pw});
+      if(error||!data||!data.session){$("loginErr").textContent="Feil e-post eller passord.";return;}
+      KEY="";sessionStorage.removeItem("sp_admin_key");showApp();
+    }catch(err){$("loginErr").textContent="Innlogging feilet.";}
+  });
+  // "Glemt passord?" — Supabase sends a reset link
+  $("forgotLink").onclick=async e=>{
+    e.preventDefault();
+    const email=($("em-login").value||"").trim()||prompt("Skriv inn e-postadressen din:");
+    if(!email)return;
+    try{ await sb.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});
+      $("loginErr").style.color="var(--fg)";
+      $("loginErr").textContent="Hvis adressen finnes, er en tilbakestillingslenke sendt. Sjekk e-posten.";
+    }catch(err){$("loginErr").style.color="";$("loginErr").textContent="Kunne ikke sende tilbakestilling.";}
+  };
+  // Access-key fallback
+  $("keyToggle").onclick=e=>{e.preventDefault();const r=$("keyRow");r.style.display=(r.style.display==="none"?"block":"none");};
+  $("keyLogin").onclick=async()=>{
+    KEY=($("key").value||"").trim();$("loginErr").style.color="";$("loginErr").textContent="";
+    try{const res=await api("login");if(res&&res.ok){sessionStorage.setItem("sp_admin_key",KEY);showApp();}
+      else $("loginErr").textContent="Feil nøkkel.";}
     catch(err){$("loginErr").textContent="Feil nøkkel.";}
+  };
+  // Password-recovery: fired when the user opens the emailed reset link
+  sb.auth.onAuthStateChange((event)=>{
+    if(event==="PASSWORD_RECOVERY"){
+      $("app").style.display="none";$("login").style.display="grid";
+      $("loginForm").style.display="none";$("resetForm").style.display="block";
+    }
+  });
+  $("resetForm").addEventListener("submit",async e=>{
+    e.preventDefault();$("resetErr").textContent="";
+    const np=$("pw-new").value||"";
+    if(np.length<8){$("resetErr").textContent="Minst 8 tegn.";return;}
+    try{const {error}=await sb.auth.updateUser({password:np});
+      if(error){$("resetErr").textContent="Kunne ikke oppdatere passordet.";return;}
+      $("resetForm").style.display="none";$("loginForm").style.display="block";
+      $("loginErr").style.color="var(--fg)";$("loginErr").textContent="Passordet er oppdatert. Logg inn.";
+    }catch(err){$("resetErr").textContent="Feil ved oppdatering.";}
   });
 
   // ── tabs ──
@@ -648,7 +714,6 @@
   }
 
   // ── reschedule (visual calendar) ──
-  const ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhtZWtpZWVka3N4eGF5ZmdqaGdkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNDYzMTUsImV4cCI6MjA5NTYyMjMxNX0.9W_B46OXBTOTm4DKelE7dzmayglTvJyENFLdt0v4aD4";
   let rsUuid=null, rsView=null, rsDateSel=null, rsSlotUtc=null, rsAvail={};
   async function ensureAvail(){ if(!AVAIL){ const r=await fetch(API+"/availability",{headers:{"Authorization":"Bearer "+ANON,"apikey":ANON}}); AVAIL=await r.json(); } rsAvail={}; (AVAIL.days||[]).forEach(d=>rsAvail[d.date]=d); return AVAIL; }
   async function openReschedule(uuid){
@@ -940,6 +1005,9 @@
   $("refresh").onclick=()=>{AVAIL=null;loadBookings();};
   $("saveContent").onclick=saveContent;
 
-  if(KEY){ api("login").then(r=>{if(r&&r.ok)showApp();else logout();}).catch(logout); }
+  (async()=>{
+    try{ const s=await sb.auth.getSession(); if(s&&s.data&&s.data.session){ showApp(); return; } }catch(e){}
+    if(KEY){ api("login").then(r=>{if(r&&r.ok)showApp();else logout();}).catch(logout); }
+  })();
 })();
 </script>
