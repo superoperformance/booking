@@ -1,0 +1,370 @@
+<title>Supero Performance — Admin</title>
+<style>
+  :root{
+    --red:#e4032e;--red-deep:#b00224;--red-soft:rgba(228,3,46,.14);
+    --bg:#0f1216;--panel:#171b21;--panel2:#12151a;--fg:#eef0f3;--muted:#98a0ad;
+    --line:rgba(255,255,255,.10);--line2:rgba(255,255,255,.16);
+    --green:#37b26a;--amber:#e6a017;--danger:#e0555f;
+    --mono:"SF Mono","JetBrains Mono","Roboto Mono",ui-monospace,Menlo,monospace;
+    --sans:"Helvetica Neue",-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+  a{color:var(--red)}
+  .mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+  /* login */
+  #login{min-height:100vh;display:grid;place-items:center;padding:20px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:32px;max-width:360px;width:100%}
+  .brand{display:flex;align-items:center;gap:11px;margin-bottom:22px}
+  .mark{display:flex;gap:3px;transform:skewX(-14deg)}
+  .mark i{width:7px;border-radius:1px;background:var(--red)}
+  .mark i:nth-child(1){height:24px}.mark i:nth-child(2){height:19px;opacity:.8}.mark i:nth-child(3){height:14px;background:#fff;opacity:.85}
+  .brand b{font-style:italic;font-weight:800;letter-spacing:.02em}
+  .brand span{display:block;font-size:9px;letter-spacing:.4em;color:var(--muted);font-weight:600}
+  h1{font-size:19px;margin:0 0 4px}
+  .sub{color:var(--muted);font-size:13px;margin-bottom:18px}
+  label{font-size:12px;font-weight:600;display:block;margin-bottom:6px}
+  input,select{width:100%;font:inherit;padding:11px 13px;border-radius:10px;border:1px solid var(--line2);
+    background:var(--panel2);color:var(--fg)}
+  input:focus,select:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 3px var(--red-soft)}
+  input.mono{font-family:var(--mono)}
+  .btn{font:inherit;font-weight:700;border:none;border-radius:10px;padding:11px 18px;cursor:pointer;transition:.15s}
+  .btn.primary{background:var(--red);color:#fff}.btn.primary:hover{background:var(--red-deep)}
+  .btn.ghost{background:transparent;border:1px solid var(--line2);color:var(--fg)}
+  .btn.ghost:hover{border-color:var(--red);color:var(--red)}
+  .btn.danger{background:transparent;border:1px solid var(--danger);color:var(--danger)}
+  .btn.danger:hover{background:var(--danger);color:#fff}
+  .btn.sm{padding:6px 11px;font-size:12.5px;border-radius:8px}
+  .err{color:var(--danger);font-size:12.5px;margin-top:10px;min-height:1em}
+
+  /* app */
+  #app{display:none;max-width:1080px;margin:0 auto;padding:20px}
+  header.top{display:flex;align-items:center;justify-content:space-between;padding:6px 2px 18px;border-bottom:1px solid var(--line);margin-bottom:20px;flex-wrap:wrap;gap:10px}
+  .tabs{display:flex;gap:4px;flex-wrap:wrap}
+  .tab{background:none;border:none;color:var(--muted);font:inherit;font-weight:600;font-size:14px;padding:9px 15px;border-radius:9px;cursor:pointer}
+  .tab.on{background:var(--red);color:#fff}
+  .tab:not(.on):hover{color:var(--fg);background:var(--panel)}
+  .view{display:none}.view.on{display:block}
+  .row-actions{display:flex;gap:6px;align-items:center;justify-content:flex-end}
+
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th{text-align:left;color:var(--muted);font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding:8px 10px;border-bottom:1px solid var(--line)}
+  td{padding:10px;border-bottom:1px solid var(--line);vertical-align:middle}
+  tr:hover td{background:var(--panel2)}
+  .pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:700}
+  .pill.web{background:var(--red-soft);color:var(--red)}
+  .pill.calendly{background:rgba(255,255,255,.08);color:var(--muted)}
+  .pill.active{background:rgba(55,178,106,.16);color:var(--green)}
+  .pill.cancelled{background:rgba(224,85,95,.16);color:var(--danger)}
+  .pill.pending{background:rgba(230,160,23,.16);color:var(--amber)}
+  .nb-ok{color:var(--green)}.nb-no{color:var(--muted)}
+  .tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px}
+  .toolbar{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+  .toolbar input{max-width:240px}
+  .muted{color:var(--muted)}
+  h2{font-size:16px;margin:0 0 4px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:640px){.grid2{grid-template-columns:1fr}}
+  .field{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+  .inline{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap}
+  .inline .field{margin:0}
+  .ov{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border:1px solid var(--line2);border-radius:9px;margin-top:8px;font-size:13px}
+  .toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--panel);border:1px solid var(--line2);
+    padding:11px 18px;border-radius:10px;font-size:13.5px;opacity:0;transition:.2s;pointer-events:none;box-shadow:0 12px 30px -12px rgba(0,0,0,.6)}
+  .toast.show{opacity:1}
+  .toast.ok{border-color:var(--green)}.toast.bad{border-color:var(--danger)}
+
+  /* modal */
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;place-items:center;padding:20px;z-index:50}
+  .modal.on{display:grid}
+  .modal .card{max-width:420px}
+</style>
+
+<!-- LOGIN -->
+<div id="login">
+  <div class="card">
+    <div class="brand"><div class="mark"><i></i><i></i><i></i></div>
+      <div><b>SUPERO</b><span>PERFORMANCE</span></div></div>
+    <h1>Admin</h1>
+    <div class="sub">Bestillinger, kapasitet og blokkering</div>
+    <form id="loginForm">
+      <label>Tilgangsnøkkel</label>
+      <input id="key" class="mono" type="password" placeholder="••••••••••••••••" autocomplete="off">
+      <div class="err" id="loginErr"></div>
+      <button class="btn primary" style="width:100%;margin-top:8px" type="submit">Logg inn</button>
+    </form>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <header class="top">
+    <div class="brand" style="margin:0"><div class="mark"><i></i><i></i><i></i></div>
+      <div><b>SUPERO</b><span>ADMIN</span></div></div>
+    <div class="tabs">
+      <button class="tab on" data-v="bookings">Bestillinger</button>
+      <button class="tab" data-v="capacity">Kapasitet</button>
+      <button class="tab" data-v="block">Blokkering</button>
+    </div>
+    <button class="btn ghost sm" id="logout">Logg ut</button>
+  </header>
+
+  <!-- BOOKINGS -->
+  <div class="view on" id="v-bookings">
+    <div class="toolbar">
+      <input id="search" placeholder="Søk navn / reg.nr…">
+      <button class="btn ghost sm" id="refresh">↻ Oppdater</button>
+      <span class="muted" id="countLbl"></span>
+    </div>
+    <div class="tablewrap"><table id="bkTable">
+      <thead><tr><th>Dato / tid</th><th>Kunde</th><th>Reg.nr</th><th>Kilde</th><th>Status</th><th>Norbits</th><th></th></tr></thead>
+      <tbody id="bkBody"><tr><td colspan="7" class="muted" style="padding:20px">Laster…</td></tr></tbody>
+    </table></div>
+  </div>
+
+  <!-- CAPACITY -->
+  <div class="view" id="v-capacity">
+    <div class="panel">
+      <h2>Standard kapasitet</h2>
+      <div class="muted" style="font-size:13px;margin-bottom:12px">Hvor mange biler kan tas inn samtidig (antall kontrollører på jobb).</div>
+      <div class="inline">
+        <div class="field"><label>Plasser per tid</label><input id="capDef" class="mono" type="number" min="0" max="5" style="max-width:100px"></div>
+        <button class="btn primary sm" id="saveCapDef">Lagre</button>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Sett kapasitet for en dag</h2>
+      <div class="muted" style="font-size:13px;margin-bottom:12px">Sykdom eller redusert bemanning: sett antall for en enkelt dag. <b>0 = stengt hele dagen.</b></div>
+      <div class="inline">
+        <div class="field"><label>Dato</label><input id="dayDate" type="date"></div>
+        <div class="field"><label>Plasser (0 = stengt)</label><input id="dayCap" class="mono" type="number" min="0" max="5" style="max-width:120px"></div>
+        <button class="btn primary sm" id="saveDayCap">Sett</button>
+      </div>
+      <div id="dayOvs"></div>
+    </div>
+    <div class="panel">
+      <h2>Sett kapasitet for én time</h2>
+      <div class="inline">
+        <div class="field"><label>Dato</label><input id="slotDate" type="date"></div>
+        <div class="field"><label>Tid</label><select id="slotTime"></select></div>
+        <div class="field"><label>Plasser</label><input id="slotCap" class="mono" type="number" min="0" max="5" style="max-width:100px"></div>
+        <button class="btn primary sm" id="saveSlotCap">Sett</button>
+      </div>
+      <div id="slotOvs"></div>
+    </div>
+  </div>
+
+  <!-- BLOCK -->
+  <div class="view" id="v-block">
+    <div class="panel">
+      <h2>Blokker en kunde</h2>
+      <div class="muted" style="font-size:13px;margin-bottom:12px">Bestillinger fra blokkerte kontakter avvises automatisk (kunden ser en nøytral melding).</div>
+      <div class="inline">
+        <div class="field"><label>Type</label><select id="blKind"><option value="email">E-post</option><option value="phone">Telefon</option></select></div>
+        <div class="field" style="flex:1;min-width:200px"><label>Verdi</label><input id="blValue" placeholder="e-post eller telefonnummer"></div>
+        <button class="btn primary sm" id="blAdd">Blokker</button>
+      </div>
+    </div>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Type</th><th>Verdi</th><th>Notat</th><th></th></tr></thead>
+      <tbody id="blBody"><tr><td colspan="4" class="muted" style="padding:16px">Laster…</td></tr></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- reschedule modal -->
+<div class="modal" id="rsModal">
+  <div class="card">
+    <h1 style="font-size:17px">Flytt time</h1>
+    <div class="sub" id="rsWho"></div>
+    <div class="field"><label>Ny dato</label><select id="rsDate"></select></div>
+    <div class="field"><label>Ny tid</label><select id="rsTime"></select></div>
+    <div class="err" id="rsErr"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px">
+      <button class="btn ghost sm" id="rsCancel">Avbryt</button>
+      <button class="btn primary sm" id="rsConfirm">Flytt timen</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  const API="https://hmekieedksxxayfgjhgd.supabase.co/functions/v1";
+  const $=id=>document.getElementById(id);
+  let KEY=sessionStorage.getItem("sp_admin_key")||"";
+  let BOOKINGS=[], AVAIL=null;
+  const MONTHS=["jan","feb","mar","apr","mai","jun","jul","aug","sep","okt","nov","des"];
+  const DAYS=["søn","man","tir","ons","tor","fre","lør"];
+
+  async function api(action, extra){
+    const r=await fetch(API+"/admin",{method:"POST",
+      headers:{"Content-Type":"application/json","x-admin-key":KEY},
+      body:JSON.stringify(Object.assign({action},extra||{}))});
+    if(r.status===401){logout();throw new Error("unauthorized");}
+    return await r.json();
+  }
+  function toast(msg,kind){const t=$("toast");t.textContent=msg;t.className="toast show "+(kind||"");
+    setTimeout(()=>t.className="toast",2600);}
+  function fmtDT(iso){const d=new Date(iso);if(isNaN(d))return iso||"";
+    return DAYS[d.getDay()]+" "+d.getDate()+". "+MONTHS[d.getMonth()]+" "+d.getFullYear()+" · "+
+      String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");}
+
+  // ── auth ──
+  function showApp(){$("login").style.display="none";$("app").style.display="block";loadBookings();loadSettings();loadBlock();}
+  function logout(){sessionStorage.removeItem("sp_admin_key");KEY="";$("app").style.display="none";$("login").style.display="grid";}
+  $("logout").onclick=logout;
+  $("loginForm").addEventListener("submit",async e=>{
+    e.preventDefault();KEY=$("key").value.trim();$("loginErr").textContent="";
+    try{const res=await api("login");if(res.ok){sessionStorage.setItem("sp_admin_key",KEY);showApp();}
+      else{$("loginErr").textContent="Feil nøkkel.";}}
+    catch(err){$("loginErr").textContent="Feil nøkkel.";}
+  });
+
+  // ── tabs ──
+  document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
+    document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("on",x===t));
+    document.querySelectorAll(".view").forEach(v=>v.classList.toggle("on",v.id==="v-"+t.dataset.v));
+  });
+
+  // ── bookings ──
+  async function loadBookings(){
+    try{const res=await api("list");BOOKINGS=(res.bookings||[]).filter(b=>b.status!=="cancelled"||b.pending_action);renderBookings();}
+    catch(e){}
+  }
+  function renderBookings(){
+    const q=($("search").value||"").toLowerCase();
+    const rows=BOOKINGS.filter(b=>!q||((b.customer_name||"")+" "+(b.license_plate||"")).toLowerCase().includes(q));
+    $("countLbl").textContent=rows.length+" bestillinger";
+    const tb=$("bkBody");
+    if(!rows.length){tb.innerHTML='<tr><td colspan="7" class="muted" style="padding:20px">Ingen bestillinger.</td></tr>';return;}
+    tb.innerHTML=rows.map(b=>{
+      const st=b.pending_action?`<span class="pill pending">${b.pending_action==="cancel"?"avbestilles…":"flyttes…"}</span>`
+        :`<span class="pill ${b.status}">${b.status==="active"?"aktiv":b.status}</span>`;
+      const nb=b.norbits_id?'<span class="nb-ok">✓</span>':'<span class="nb-no">—</span>';
+      const canAct=b.status==="active"&&!b.pending_action;
+      return `<tr>
+        <td class="mono">${fmtDT(b.start_time)}</td>
+        <td>${esc(b.customer_name)||"—"}</td>
+        <td class="mono">${esc(b.license_plate)||"—"}</td>
+        <td><span class="pill ${b.source}">${b.source}</span></td>
+        <td>${st}</td>
+        <td class="mono" title="${esc(b.norbits_id)||""}">${nb}</td>
+        <td><div class="row-actions">${canAct?
+          `<button class="btn ghost sm" data-rs="${esc(b.calendly_uuid)}">Flytt</button>
+           <button class="btn danger sm" data-cx="${esc(b.calendly_uuid)}">Avbestill</button>`:""}</div></td>
+      </tr>`;}).join("");
+    tb.querySelectorAll("[data-cx]").forEach(x=>x.onclick=()=>doCancel(x.dataset.cx));
+    tb.querySelectorAll("[data-rs]").forEach(x=>x.onclick=()=>openReschedule(x.dataset.rs));
+  }
+  function esc(s){return (s==null?"":String(s)).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]));}
+  async function doCancel(uuid){
+    const b=BOOKINGS.find(x=>x.calendly_uuid===uuid);
+    if(!confirm(`Avbestille timen for ${b?b.customer_name:""} (${b?b.license_plate:""})?\n\nKunden får en avbestillingse-post, og timen fjernes fra Norbits ved neste syklus.`))return;
+    try{const r=await api("cancel",{uuid});if(r.ok){toast("Avbestilling lagt i kø — bekreftes ved neste botsyklus.","ok");loadBookings();}
+      else toast("Kunne ikke avbestille.","bad");}catch(e){toast("Feil.","bad");}
+  }
+
+  // ── reschedule ──
+  let rsUuid=null;
+  async function ensureAvail(){ if(!AVAIL){ const r=await fetch(API+"/availability",{headers:{"Authorization":"Bearer "+ANON,"apikey":ANON}}); AVAIL=await r.json(); } return AVAIL; }
+  const ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhtZWtpZWVka3N4eGF5ZmdqaGdkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNDYzMTUsImV4cCI6MjA5NTYyMjMxNX0.9W_B46OXBTOTm4DKelE7dzmayglTvJyENFLdt0v4aD4";
+  async function openReschedule(uuid){
+    rsUuid=uuid;const b=BOOKINGS.find(x=>x.calendly_uuid===uuid);
+    $("rsWho").textContent=(b?b.customer_name+" · "+b.license_plate+" · "+fmtDT(b.start_time):"");
+    $("rsErr").textContent="";
+    const av=await ensureAvail();
+    const ds=$("rsDate");ds.innerHTML=(av.days||[]).map(d=>`<option value="${d.date}">${d.date}</option>`).join("");
+    ds.onchange=fillRsTimes;fillRsTimes();
+    $("rsModal").classList.add("on");
+  }
+  function fillRsTimes(){
+    const day=(AVAIL.days||[]).find(d=>d.date===$("rsDate").value);
+    const ts=$("rsTime");
+    ts.innerHTML=(day?day.slots:[]).filter(s=>s.left>0).map(s=>`<option value="${s.start_utc}">${s.time} (${s.left} ledig)</option>`).join("")
+      ||'<option value="">Ingen ledige</option>';
+  }
+  $("rsCancel").onclick=()=>$("rsModal").classList.remove("on");
+  $("rsConfirm").onclick=async()=>{
+    const slotUtc=$("rsTime").value;if(!slotUtc){$("rsErr").textContent="Velg en ledig tid.";return;}
+    try{const r=await api("reschedule",{uuid:rsUuid,slotUtc});
+      if(r.ok){$("rsModal").classList.remove("on");AVAIL=null;toast("Flytting lagt i kø.","ok");loadBookings();}
+      else $("rsErr").textContent="Kunne ikke flytte ("+(r.error||"")+").";}
+    catch(e){$("rsErr").textContent="Feil.";}
+  };
+
+  // ── capacity ──
+  let SETTINGS={};
+  async function loadSettings(){
+    try{const r=await api("settings_get");SETTINGS=r.settings||{};
+      $("capDef").value=SETTINGS["booking.capacity_default"]||"2";
+      // slot time options from grid
+      const times=slotGrid();$("slotTime").innerHTML=times.map(t=>`<option>${t}</option>`).join("");
+      renderOverrides();
+    }catch(e){}
+  }
+  function slotGrid(){
+    const open=(SETTINGS["booking.open"]||"08:00"),ls=(SETTINGS["booking.lunch_start"]||"11:30"),
+      le=(SETTINGS["booking.lunch_end"]||"12:00"),cl=(SETTINGS["booking.close"]||"16:00"),
+      slot=parseInt(SETTINGS["booking.slot_minutes"]||"45");
+    const m=s=>{const[a,b]=s.split(":").map(Number);return a*60+b;};
+    const wins=[[m(open),m(ls)],[m(le),m(cl)]];const out=[];
+    for(const w of wins){let t=w[0];while(t+slot<=w[1]){out.push(String(Math.floor(t/60)).padStart(2,"0")+":"+String(t%60).padStart(2,"0"));t+=slot;}}
+    return out;
+  }
+  function renderOverrides(){
+    const dov=JSON.parse(SETTINGS["booking.day_overrides"]||"{}");
+    $("dayOvs").innerHTML=Object.keys(dov).sort().map(d=>
+      `<div class="ov"><span>${d} → <b>${dov[d]==0?"STENGT":dov[d]+" plasser"}</b></span>
+       <button class="btn ghost sm" data-rmday="${d}">Fjern</button></div>`).join("")||"";
+    $("dayOvs").querySelectorAll("[data-rmday]").forEach(x=>x.onclick=()=>setDayCap(x.dataset.rmday,""));
+    const sov=JSON.parse(SETTINGS["booking.slot_overrides"]||"{}");
+    $("slotOvs").innerHTML=Object.keys(sov).sort().map(k=>
+      `<div class="ov"><span>${k} → <b>${sov[k]} plasser</b></span>
+       <button class="btn ghost sm" data-rmslot="${k}">Fjern</button></div>`).join("")||"";
+    $("slotOvs").querySelectorAll("[data-rmslot]").forEach(x=>x.onclick=()=>{const[d,t]=x.dataset.rmslot.split(" ");setSlotCap(d,t,"");});
+  }
+  $("saveCapDef").onclick=async()=>{
+    const r=await api("settings_set",{key:"booking.capacity_default",value:$("capDef").value||"2"});
+    if(r.ok){SETTINGS["booking.capacity_default"]=$("capDef").value;toast("Lagret.","ok");}else toast("Feil.","bad");
+  };
+  async function setDayCap(date,cap){
+    const r=await api("capacity_day",{date,capacity:cap===""?"":cap});
+    if(r.ok){SETTINGS["booking.day_overrides"]=JSON.stringify(r.day_overrides);renderOverrides();toast("Oppdatert.","ok");}
+  }
+  $("saveDayCap").onclick=()=>{if(!$("dayDate").value)return toast("Velg dato.","bad");setDayCap($("dayDate").value,$("dayCap").value);};
+  async function setSlotCap(date,time,cap){
+    const r=await api("capacity_slot",{date,time,capacity:cap===""?"":cap});
+    if(r.ok){SETTINGS["booking.slot_overrides"]=JSON.stringify(r.slot_overrides);renderOverrides();toast("Oppdatert.","ok");}
+  }
+  $("saveSlotCap").onclick=()=>{if(!$("slotDate").value)return toast("Velg dato.","bad");setSlotCap($("slotDate").value,$("slotTime").value,$("slotCap").value);};
+
+  // ── blocklist ──
+  async function loadBlock(){
+    try{const r=await api("blocklist_get");renderBlock(r.entries||[]);}catch(e){}
+  }
+  function renderBlock(entries){
+    const tb=$("blBody");
+    if(!entries.length){tb.innerHTML='<tr><td colspan="4" class="muted" style="padding:16px">Ingen blokkerte.</td></tr>';return;}
+    tb.innerHTML=entries.map(e=>`<tr><td>${e.type==="email"?"E-post":"Telefon"}</td>
+      <td class="mono">${esc(e.value)}</td><td class="muted">${esc(e.note)||""}</td>
+      <td class="row-actions"><button class="btn ghost sm" data-unbl="${esc(e.type)}|${esc(e.value)}">Fjern</button></td></tr>`).join("");
+    tb.querySelectorAll("[data-unbl]").forEach(x=>x.onclick=async()=>{
+      const[kind,value]=x.dataset.unbl.split("|");const r=await api("blocklist_remove",{kind,value});
+      if(r.ok){renderBlock(r.entries);toast("Fjernet.","ok");}});
+  }
+  $("blAdd").onclick=async()=>{
+    const kind=$("blKind").value,value=$("blValue").value.trim();if(!value)return toast("Skriv inn en verdi.","bad");
+    const r=await api("blocklist_add",{kind,value,note:"lagt til fra admin"});
+    if(r.ok){renderBlock(r.entries);$("blValue").value="";toast("Blokkert.","ok");}else toast("Feil.","bad");
+  };
+
+  $("search").addEventListener("input",renderBookings);
+  $("refresh").onclick=()=>{AVAIL=null;loadBookings();};
+
+  if(KEY){ api("login").then(r=>{if(r&&r.ok)showApp();else logout();}).catch(logout); }
+})();
+</script>
