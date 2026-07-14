@@ -740,10 +740,8 @@
       const byTime={};rows.forEach(b=>{const t=new Date(b.start_time);const tt=isNaN(t)?"—":String(t.getHours()).padStart(2,"0")+":"+String(t.getMinutes()).padStart(2,"0");(byTime[tt]=byTime[tt]||[]).push(b);});
       const body=Object.keys(byTime).sort().map(tt=>{
         const list=byTime[tt];
-        if(list.length===1){
-          return `<div class="tgroup single"><div class="tlabel">${tt}</div>${bookingCard(list[0])}</div>`;
-        }
-        return `<div class="tgroup"><div class="thead"><span class="ttime">${tt}</span><span class="tcount">${list.length} biler</span><span class="chev">▾</span></div><div class="tbody">${list.map(bookingCard).join("")}</div></div>`;
+        const label=list.length===1?"1 bil":(list.length+" biler");
+        return `<div class="tgroup"><div class="thead"><span class="ttime">${tt}</span><span class="tcount">${label}</span><span class="chev">▾</span></div><div class="tbody">${list.map(bookingCard).join("")}</div></div>`;
       }).join("");
       return `<div class="daygroup${openDays.has(k)?' open':''}">
         <div class="dayhead${isT?' today':''}" data-day="${k}">
