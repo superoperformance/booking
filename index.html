@@ -436,31 +436,31 @@
     </section>
   </div>
 </div>
-<div class="preview-tag">Designutkast · testdata</div>
 
 <script>
 (function(){
   const MONTHS=["Januar","Februar","Mars","April","Mai","Juni","Juli","August","September","Oktober","November","Desember"];
   const DAYS=["Søndag","Mandag","Tirsdag","Onsdag","Torsdag","Fredag","Lørdag"];
-  const MORNING=["08:00","08:45","09:30","10:15"];
-  const AFTERNOON=["12:00","12:45","13:30","14:15","15:00"];
-  const CAP=3;                         // default inspectors
-  const TODAY=new Date(2026,6,14);     // preview anchor (14 Jul 2026)
-  TODAY.setHours(0,0,0,0);
+  const API="https://hmekieedksxxayfgjhgd.supabase.co/functions/v1";
+  const ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhtZWtpZWVka3N4eGF5ZmdqaGdkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNDYzMTUsImV4cCI6MjA5NTYyMjMxNX0.9W_B46OXBTOTm4DKelE7dzmayglTvJyENFLdt0v4aD4";
+  const AUTH={"Authorization":"Bearer "+ANON,"apikey":ANON,"Content-Type":"application/json"};
+  const TODAY=new Date(); TODAY.setHours(0,0,0,0);
   let view=new Date(TODAY.getFullYear(),TODAY.getMonth(),1);
-  const state={date:null,time:null};
+  const state={date:null,dateStr:null,slot:null};  // slot={time,left,capacity,start_utc}
+  let AVAIL={}, CAPDEFAULT=2, loadErr=false;
+  const pad=n=>String(n).padStart(2,"0");
+  const dstr=d=>d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
 
-  // deterministic pseudo-random so a date's availability is stable
-  function rng(seed){let h=2166136261;for(let i=0;i<seed.length;i++){h^=seed.charCodeAt(i);h=Math.imul(h,16777619);}
-    return ()=>{h+=0x6D2B79F5;let t=h;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296;};}
-  function key(d){return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate();}
-  function dayCap(d){const r=rng("cap"+key(d))();return r<0.12?1:r<0.3?2:CAP;} // sim: some sick days
-  function slotAvail(d){
-    const cap=dayCap(d),r=rng(key(d));const out={};
-    [...MORNING,...AFTERNOON].forEach(t=>{const x=r();
-      let booked=x<0.16?cap:x<0.34?Math.min(cap,2):x<0.55?1:0;
-      out[t]=Math.max(0,cap-booked);});
-    return {cap,out};
+  async function loadAvailability(){
+    loadErr=false;
+    try{
+      const r=await fetch(API+"/availability",{headers:AUTH});
+      const d=await r.json();
+      AVAIL={};
+      if(d&&d.days){ CAPDEFAULT=d.capacityDefault||2;
+        d.days.forEach(x=>{AVAIL[x.date]={capacity:(x.slots[0]?x.slots[0].capacity:CAPDEFAULT),slots:x.slots};}); }
+    }catch(e){ loadErr=true; AVAIL={}; }
+    renderMonth();
   }
 
   const $=id=>document.getElementById(id);
@@ -482,44 +482,47 @@
     let lead=(first.getDay()+6)%7;                 // Monday-first offset
     let dim=new Date(view.getFullYear(),view.getMonth()+1,0).getDate();
     for(let i=0;i<lead;i++)grid.appendChild(document.createElement("div"));
-    for(let d=1;d<=dim;d++){
-      const cell=new Date(view.getFullYear(),view.getMonth(),d);
-      const wd=cell.getDay(),weekend=(wd===0||wd===6);
-      const past=cell<TODAY;
-      const el=document.createElement(past||weekend?"div":"button");
-      el.className="day";el.textContent=d;
+    for(let dd=1;dd<=dim;dd++){
+      const cell=new Date(view.getFullYear(),view.getMonth(),dd);
+      const ds=dstr(cell);
+      const open=!!AVAIL[ds];                       // bookable only if backend offers slots
+      const el=document.createElement(open?"button":"div");
+      el.className="day";el.textContent=dd;
       if(cell.getTime()===TODAY.getTime())el.classList.add("today");
-      if(past||weekend){el.classList.add("off");}
+      if(!open){el.classList.add("off");}
       else{
-        if(state.date&&cell.getTime()===state.date.getTime())el.classList.add("sel");
-        el.addEventListener("click",()=>{state.date=cell;renderMonth();openDay(cell);});
+        if(state.dateStr===ds)el.classList.add("sel");
+        el.addEventListener("click",()=>{state.date=cell;state.dateStr=ds;renderMonth();openDay(cell,ds);});
       }
       grid.appendChild(el);
     }
-    const prevOk=new Date(view.getFullYear(),view.getMonth(),1)>TODAY;
-    $("prev").disabled=!prevOk;
+    $("prev").disabled=new Date(view.getFullYear(),view.getMonth(),1)<=TODAY;
+    if(loadErr){ board.innerHTML='<div class="lunch">Kunne ikke laste ledige tider. Prøv igjen, eller ring +47 40 32 41 41.</div>'; }
   }
 
-  function openDay(d){
+  function openDay(d,ds){
     $("dateHead").textContent=DAYS[d.getDay()]+" "+d.getDate()+". "+MONTHS[d.getMonth()].toLowerCase();
-    const {cap,out}=slotAvail(d);
-    $("capHint").textContent=cap+" av "+CAP+" kontrollører";
+    const info=AVAIL[ds]||{capacity:CAPDEFAULT,slots:[]};
+    const cap=info.capacity;
+    $("capHint").textContent=cap+" plass"+(cap===1?"":"er")+" per tid";
     board.innerHTML="";
-    const groups=[["Formiddag",MORNING],["Ettermiddag",AFTERNOON]];
+    const slots=info.slots||[];
+    const groups=[["Formiddag",slots.filter(s=>s.time<"12:00")],["Ettermiddag",slots.filter(s=>s.time>="12:00")]];
     groups.forEach(([name,list],gi)=>{
+      if(!list.length) return;
       const gl=document.createElement("div");gl.className="grouplabel";gl.textContent=name;board.appendChild(gl);
-      list.forEach((t,i)=>{
-        const left=out[t];
+      list.forEach((s,i)=>{
+        const left=s.left, cp=s.capacity;
         const b=document.createElement("button");
         b.className="slot"+(left===1?" low":"");b.disabled=left===0;
         b.style.animation=`rise .4s cubic-bezier(.2,.8,.2,1) ${(gi*4+i)*40}ms both`;
-        const pips=Array.from({length:cap},(_,k)=>`<i class="${k<left?'f':''}"></i>`).join("");
-        b.innerHTML=`<span class="t">${t}</span>
+        const pips=Array.from({length:cp},(_,k)=>`<i class="${k<left?'f':''}"></i>`).join("");
+        b.innerHTML=`<span class="t">${s.time}</span>
           <span class="meta"><span class="lab">${left===0?"Fullt":left===1?"Få igjen":"Ledig"}</span>
           <span class="pips">${pips}</span></span>
           ${left===0?'<span class="cnt">0 ledige</span>':`<span class="cnt">${left} ledig${left>1?'e':''}</span>`}
           <span class="arrow">→</span>`;
-        if(left>0)b.addEventListener("click",()=>{state.time=t;openDetails();});
+        if(left>0)b.addEventListener("click",()=>{state.slot=s;openDetails();});
         board.appendChild(b);
       });
       if(gi===0){const l=document.createElement("div");l.className="lunch";
@@ -531,13 +534,15 @@
 
   function openDetails(){
     const d=state.date;
-    $("pick2").textContent="🗓  "+DAYS[d.getDay()]+" "+d.getDate()+". "+MONTHS[d.getMonth()].toLowerCase()+" · "+state.time;
+    $("pick2").textContent="🗓  "+DAYS[d.getDay()]+" "+d.getDate()+". "+MONTHS[d.getMonth()].toLowerCase()+" · "+state.slot.time;
     setStep(3);
   }
 
-  // form validation
-  $("form").addEventListener("submit",e=>{
+  // submit → POST to the booking backend
+  let submitting=false;
+  $("form").addEventListener("submit",async e=>{
     e.preventDefault();
+    if(submitting) return;
     const fn=$("fn").value.trim(),ln=$("ln").value.trim(),em=$("em").value.trim(),
           pl=$("pl").value.trim(),ph=$("ph").value.trim();
     const emOk=/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em);
@@ -546,41 +551,58 @@
     const allChk=boxes.every(b=>b.checked);
     if(!plOk)markPlate();
     if(!fn||!ln||!emOk||!plOk||ph.length<6||!allChk){
+      $("err").textContent="Fyll ut alle felt og bekreft alle punktene for å fortsette.";
       $("err").classList.add("show");return;
     }
+    if(!state.slot){ $("err").textContent="Velg et tidspunkt på nytt."; $("err").classList.add("show"); setStep(1); return; }
     $("err").classList.remove("show");
-    const d=state.date;
-    $("doneEmail").textContent=em;
-    $("donePlate").textContent=pl.toUpperCase();
-    $("doneWhen").innerHTML="<b>"+DAYS[d.getDay()]+" "+d.getDate()+". "+MONTHS[d.getMonth()].toLowerCase()+" "+d.getFullYear()+"</b> · "+state.time+"–"+addMin(state.time,45);
-    const ref="SP-"+String(1000+Math.floor(rng(key(d)+state.time)()*8999));
-    $("ticketRef").textContent=ref;
-    buildCalendar(d,state.time,pl.toUpperCase(),ref);
-    setStep(4);
+    const cta=$("form").querySelector(".cta"), ctaHTML=cta.innerHTML;
+    submitting=true; cta.disabled=true; cta.textContent="Sender…";
+    try{
+      const r=await fetch(API+"/book",{method:"POST",headers:AUTH,body:JSON.stringify({
+        firstName:fn,lastName:ln,email:em,plate:pl.toUpperCase(),phone:ph,confirms:true,slotUtc:state.slot.start_utc
+      })});
+      const res=await r.json();
+      if(res.ok){
+        const d=state.date, time=state.slot.time;
+        $("doneEmail").textContent=em;
+        $("donePlate").textContent=pl.toUpperCase();
+        $("doneWhen").innerHTML="<b>"+DAYS[d.getDay()]+" "+d.getDate()+". "+MONTHS[d.getMonth()].toLowerCase()+" "+d.getFullYear()+"</b> · "+time+"–"+addMin(time,45);
+        $("ticketRef").textContent=res.ref||"SP";
+        buildCalendar(state.slot.start_utc,pl.toUpperCase(),res.ref||"SP");
+        setStep(4);
+      }else{
+        $("err").textContent=res.message||"Noe gikk galt. Prøv igjen, eller ring +47 40 32 41 41.";
+        $("err").classList.add("show");
+        if(res.error==="fullt"||res.error==="duplikat") loadAvailability();
+      }
+    }catch(err){
+      $("err").textContent="Nettverksfeil. Sjekk internett og prøv igjen.";
+      $("err").classList.add("show");
+    }finally{
+      submitting=false; cta.disabled=false; cta.innerHTML=ctaHTML;
+    }
   });
   function addMin(t,m){const[h,mi]=t.split(":").map(Number);const tot=h*60+mi+m;
     return String(Math.floor(tot/60)).padStart(2,"0")+":"+String(tot%60).padStart(2,"0");}
 
-  // ── add-to-calendar (.ics download + Google Calendar link) ──
-  function stampLocal(dt){const p=n=>String(n).padStart(2,"0");
-    return dt.getFullYear()+p(dt.getMonth()+1)+p(dt.getDate())+"T"+p(dt.getHours())+p(dt.getMinutes())+"00";}
-  function buildCalendar(d,time,plate,ref){
-    const[hh,mm]=time.split(":").map(Number);
-    const s=new Date(d.getFullYear(),d.getMonth(),d.getDate(),hh,mm);
-    const e=new Date(s.getTime()+45*60000);
-    const S=stampLocal(s),E=stampLocal(e);
+  // ── add-to-calendar (.ics download + Google Calendar link) — UTC, device-independent ──
+  function buildCalendar(startUtc,plate,ref){
+    const s=new Date(startUtc), e=new Date(s.getTime()+45*60000);
+    const U=dt=>dt.getUTCFullYear()+pad(dt.getUTCMonth()+1)+pad(dt.getUTCDate())+"T"+pad(dt.getUTCHours())+pad(dt.getUTCMinutes())+"00Z";
+    const S=U(s),E=U(e);
     const title="EU-kontroll – Supero Performance";
     const loc="Inges Gate 36, 2004 Lillestrøm";
     const desc="Reg-nr "+plate+". Ta med vognkort del 1 og bilnøkkel. Bilen må stå her under kontrollen.";
     $("gcalBtn").href="https://calendar.google.com/calendar/render?action=TEMPLATE"+
-      "&text="+encodeURIComponent(title)+"&dates="+S+"/"+E+"&ctz=Europe/Oslo"+
+      "&text="+encodeURIComponent(title)+"&dates="+S+"/"+E+
       "&location="+encodeURIComponent(loc)+"&details="+encodeURIComponent(desc);
     $("icsBtn").onclick=()=>{
       const ics=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Supero Performance//EU-kontroll//NO",
         "CALSCALE:GREGORIAN","BEGIN:VEVENT","UID:"+ref+"@superoperformance.no",
-        "DTSTAMP:"+stampLocal(new Date()),"DTSTART;TZID=Europe/Oslo:"+S,"DTEND;TZID=Europe/Oslo:"+E,
+        "DTSTAMP:"+U(new Date()),"DTSTART:"+S,"DTEND:"+E,
         "SUMMARY:"+title,"LOCATION:"+loc,"DESCRIPTION:"+desc,
-        "BEGIN:VALARM","TRIGGER:-PT2H","ACTION:DISPLAY","DESCRIPTION:EU-kontroll i morgen","END:VALARM",
+        "BEGIN:VALARM","TRIGGER:-PT2H","ACTION:DISPLAY","DESCRIPTION:EU-kontroll","END:VALARM",
         "END:VEVENT","END:VCALENDAR"].join("\r\n");
       const a=document.createElement("a");
       a.href=URL.createObjectURL(new Blob([ics],{type:"text/calendar;charset=utf-8"}));
@@ -606,8 +628,8 @@
   $("next").addEventListener("click",()=>{view.setMonth(view.getMonth()+1);renderMonth();});
   $("back2").addEventListener("click",()=>setStep(1));
   $("back3").addEventListener("click",()=>setStep(2));
-  $("again").addEventListener("click",()=>{state.date=null;state.time=null;
-    $("form").reset();view=new Date(TODAY.getFullYear(),TODAY.getMonth(),1);renderMonth();setStep(1);});
+  $("again").addEventListener("click",()=>{state.date=null;state.dateStr=null;state.slot=null;
+    $("form").reset();markPlate();view=new Date(TODAY.getFullYear(),TODAY.getMonth(),1);loadAvailability();setStep(1);});
 
   // ── light / dark comparison toggle (flips whole page incl. brand rail) ──
   function applyTheme(t){
@@ -618,6 +640,6 @@
   $("tt").addEventListener("click",e=>{const b=e.target.closest("button");if(b)applyTheme(b.dataset.t);});
   applyTheme("dark");   // default: the dark brand look
 
-  renderMonth();
+  loadAvailability();   // fetch real slots from the backend
 })();
 </script>
