@@ -76,6 +76,32 @@
   .toast.show{opacity:1}
   .toast.ok{border-color:var(--green)}.toast.bad{border-color:var(--danger)}
 
+  /* summary + day-grouped agenda */
+  .summary{display:flex;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 18px;flex:1;min-width:110px}
+  .stat .num{display:block;font-size:26px;font-weight:800;font-family:var(--mono);line-height:1.1}
+  .stat.hot .num{color:var(--red)}
+  .stat .lbl{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-top:2px}
+  .daygroup{margin-bottom:14px;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .dayhead{display:flex;justify-content:space-between;align-items:center;padding:11px 16px;background:var(--panel2);border-bottom:1px solid var(--line)}
+  .dayhead.today{background:var(--red-soft)}
+  .dayhead .dname{font-weight:700;font-size:14px}
+  .dayhead.today .dname{color:var(--red)}
+  .dayhead .dcount{font-size:12px;color:var(--muted);font-family:var(--mono)}
+  .dayhead .dcount b{color:var(--fg)}
+  .bkrow{display:grid;grid-template-columns:52px 1fr 78px 92px 84px auto;gap:12px;align-items:center;padding:11px 16px;border-bottom:1px solid var(--line);font-size:13.5px}
+  .bkrow:last-child{border-bottom:none}
+  .bkrow:hover{background:var(--panel2)}
+  .btime{font-weight:600;font-family:var(--mono)}
+  .bcust{display:flex;flex-direction:column;gap:1px;min-width:0}
+  .bcust b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bplate{font-size:12px;color:var(--muted);font-family:var(--mono)}
+  .bact{display:flex;gap:6px;justify-content:flex-end}
+  @media(max-width:660px){
+    .bkrow{grid-template-columns:46px 1fr auto;grid-template-areas:"time cust act";row-gap:6px;column-gap:10px}
+    .btime{grid-area:time}.bcust{grid-area:cust}.bact{grid-area:act;flex-direction:column}
+    .bsrc,.bstat,.bnb{display:none}
+  }
   /* modal */
   .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;place-items:center;padding:20px;z-index:50}
   .modal.on{display:grid}
@@ -113,15 +139,12 @@
 
   <!-- BOOKINGS -->
   <div class="view on" id="v-bookings">
+    <div class="summary" id="summary"></div>
     <div class="toolbar">
       <input id="search" placeholder="Søk navn / reg.nr…">
       <button class="btn ghost sm" id="refresh">↻ Oppdater</button>
-      <span class="muted" id="countLbl"></span>
     </div>
-    <div class="tablewrap"><table id="bkTable">
-      <thead><tr><th>Dato / tid</th><th>Kunde</th><th>Reg.nr</th><th>Kilde</th><th>Status</th><th>Norbits</th><th></th></tr></thead>
-      <tbody id="bkBody"><tr><td colspan="7" class="muted" style="padding:20px">Laster…</td></tr></tbody>
-    </table></div>
+    <div id="bkList"><div class="muted" style="padding:24px;text-align:center">Laster…</div></div>
   </div>
 
   <!-- CAPACITY -->
@@ -199,6 +222,9 @@
   let BOOKINGS=[], AVAIL=null;
   const MONTHS=["jan","feb","mar","apr","mai","jun","jul","aug","sep","okt","nov","des"];
   const DAYS=["søn","man","tir","ons","tor","fre","lør"];
+  const MONTHSLONG=["januar","februar","mars","april","mai","juni","juli","august","september","oktober","november","desember"];
+  const DAYSLONG=["Søndag","Mandag","Tirsdag","Onsdag","Torsdag","Fredag","Lørdag"];
+  const dayKey=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
 
   async function api(action, extra){
     const r=await fetch(API+"/admin",{method:"POST",
@@ -237,28 +263,52 @@
   }
   function renderBookings(){
     const q=($("search").value||"").toLowerCase();
-    const rows=BOOKINGS.filter(b=>!q||((b.customer_name||"")+" "+(b.license_plate||"")).toLowerCase().includes(q));
-    $("countLbl").textContent=rows.length+" bestillinger";
-    const tb=$("bkBody");
-    if(!rows.length){tb.innerHTML='<tr><td colspan="7" class="muted" style="padding:20px">Ingen bestillinger.</td></tr>';return;}
-    tb.innerHTML=rows.map(b=>{
-      const st=b.pending_action?`<span class="pill pending">${b.pending_action==="cancel"?"avbestilles…":"flyttes…"}</span>`
-        :`<span class="pill ${b.status}">${b.status==="active"?"aktiv":b.status}</span>`;
-      const nb=b.norbits_id?'<span class="nb-ok">✓</span>':'<span class="nb-no">—</span>';
-      const canAct=b.status==="active"&&!b.pending_action;
-      return `<tr>
-        <td class="mono">${fmtDT(b.start_time)}</td>
-        <td>${esc(b.customer_name)||"—"}</td>
-        <td class="mono">${esc(b.license_plate)||"—"}</td>
-        <td><span class="pill ${b.source}">${b.source}</span></td>
-        <td>${st}</td>
-        <td class="mono" title="${esc(b.norbits_id)||""}">${nb}</td>
-        <td><div class="row-actions">${canAct?
-          `<button class="btn ghost sm" data-rs="${esc(b.calendly_uuid)}">Flytt</button>
-           <button class="btn danger sm" data-cx="${esc(b.calendly_uuid)}">Avbestill</button>`:""}</div></td>
-      </tr>`;}).join("");
-    tb.querySelectorAll("[data-cx]").forEach(x=>x.onclick=()=>doCancel(x.dataset.cx));
-    tb.querySelectorAll("[data-rs]").forEach(x=>x.onclick=()=>openReschedule(x.dataset.rs));
+    const all=BOOKINGS.filter(b=>!q||((b.customer_name||"")+" "+(b.license_plate||"")).toLowerCase().includes(q));
+    const today=new Date();today.setHours(0,0,0,0);const tk=dayKey(today);
+    const wk=new Date(today);wk.setDate(wk.getDate()+7);
+    let up=0,td=0,wc=0;const byDay={};
+    all.forEach(b=>{const d=new Date(b.start_time);if(isNaN(d))return;const k=dayKey(d);
+      (byDay[k]=byDay[k]||[]).push(b);
+      const dd=new Date(d);dd.setHours(0,0,0,0);
+      if(b.status==="active"){ if(dd>=today)up++; if(k===tk)td++; if(dd>=today&&dd<wk)wc++; }});
+    $("summary").innerHTML=
+      `<div class="stat hot"><span class="num">${up}</span><span class="lbl">kommende</span></div>`+
+      `<div class="stat"><span class="num">${td}</span><span class="lbl">i dag</span></div>`+
+      `<div class="stat"><span class="num">${wc}</span><span class="lbl">neste 7 dager</span></div>`+
+      `<div class="stat"><span class="num">${all.length}</span><span class="lbl">totalt vist</span></div>`;
+    const days=Object.keys(byDay).sort();
+    if(!days.length){$("bkList").innerHTML='<div class="muted" style="padding:24px;text-align:center">Ingen bestillinger.</div>';return;}
+    $("bkList").innerHTML=days.map(k=>{
+      const rows=byDay[k].sort((a,b)=>String(a.start_time).localeCompare(String(b.start_time)));
+      const d=new Date(k+"T12:00:00");const isT=k===tk;
+      const active=rows.filter(r=>r.status==="active").length;
+      return `<div class="daygroup">
+        <div class="dayhead${isT?' today':''}">
+          <span class="dname">${DAYSLONG[d.getDay()]} ${d.getDate()}. ${MONTHSLONG[d.getMonth()]}${isT?' · i dag':''}</span>
+          <span class="dcount"><b>${active}</b> ${active===1?'time':'timer'}</span>
+        </div>${rows.map(bookingRow).join("")}</div>`;
+    }).join("");
+    bindRowActions();
+  }
+  function bookingRow(b){
+    const t=new Date(b.start_time);
+    const time=isNaN(t)?"—":String(t.getHours()).padStart(2,"0")+":"+String(t.getMinutes()).padStart(2,"0");
+    const st=b.pending_action?`<span class="pill pending">${b.pending_action==="cancel"?"avbestilles…":"flyttes…"}</span>`
+      :`<span class="pill ${b.status}">${b.status==="active"?"aktiv":b.status==="cancelled"?"avbestilt":b.status}</span>`;
+    const nb=b.norbits_id?'<span class="nb-ok" title="'+esc(b.norbits_id)+'">✓ Norbits</span>':'<span class="nb-no">venter</span>';
+    const canAct=b.status==="active"&&!b.pending_action;
+    return `<div class="bkrow">
+      <span class="btime">${time}</span>
+      <span class="bcust"><b>${esc(b.customer_name)||"—"}</b><span class="bplate">${esc(b.license_plate)||"—"}</span></span>
+      <span class="bsrc"><span class="pill ${b.source}">${b.source==="web"?"nett":"calendly"}</span></span>
+      <span class="bstat">${st}</span>
+      <span class="bnb">${nb}</span>
+      <span class="bact">${canAct?`<button class="btn ghost sm" data-rs="${esc(b.calendly_uuid)}">Flytt</button><button class="btn danger sm" data-cx="${esc(b.calendly_uuid)}">Avbestill</button>`:""}</span>
+    </div>`;
+  }
+  function bindRowActions(){
+    $("bkList").querySelectorAll("[data-cx]").forEach(x=>x.onclick=()=>doCancel(x.dataset.cx));
+    $("bkList").querySelectorAll("[data-rs]").forEach(x=>x.onclick=()=>openReschedule(x.dataset.rs));
   }
   function esc(s){return (s==null?"":String(s)).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]));}
   async function doCancel(uuid){
