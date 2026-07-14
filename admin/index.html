@@ -25,9 +25,10 @@
   h1{font-size:19px;margin:0 0 4px}
   .sub{color:var(--muted);font-size:13px;margin-bottom:18px}
   label{font-size:12px;font-weight:600;display:block;margin-bottom:6px}
-  input,select{width:100%;font:inherit;padding:11px 13px;border-radius:10px;border:1px solid var(--line2);
+  input,select,textarea{width:100%;font:inherit;padding:11px 13px;border-radius:10px;border:1px solid var(--line2);
     background:var(--panel2);color:var(--fg)}
-  input:focus,select:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 3px var(--red-soft)}
+  textarea{resize:vertical;min-height:56px;line-height:1.5}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 3px var(--red-soft)}
   input.mono{font-family:var(--mono)}
   .btn{font:inherit;font-weight:700;border:none;border-radius:10px;padding:11px 18px;cursor:pointer;transition:.15s}
   .btn.primary{background:var(--red);color:#fff}.btn.primary:hover{background:var(--red-deep)}
@@ -132,6 +133,7 @@
     <div class="tabs">
       <button class="tab on" data-v="bookings">Bestillinger</button>
       <button class="tab" data-v="capacity">Kapasitet</button>
+      <button class="tab" data-v="content">Innhold</button>
       <button class="tab" data-v="block">Blokkering</button>
     </div>
     <button class="btn ghost sm" id="logout">Logg ut</button>
@@ -176,6 +178,45 @@
         <button class="btn primary sm" id="saveSlotCap">Sett</button>
       </div>
       <div id="slotOvs"></div>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="view" id="v-content">
+    <div class="panel">
+      <h2>Tekst</h2>
+      <div class="field"><label>Etikett (over overskriften)</label><input id="ct-eyebrow"></div>
+      <div class="field"><label>Overskrift</label><input id="ct-headline"></div>
+      <div class="field"><label>Ingress</label><textarea id="ct-tagline" rows="3"></textarea></div>
+    </div>
+    <div class="panel">
+      <h2>Priser</h2>
+      <div class="grid2">
+        <div class="field"><label>Personbil (kr)</label><input id="ct-pb" class="mono"></div>
+        <div class="field"><label>Varebil (kr)</label><input id="ct-vb" class="mono"></div>
+      </div>
+      <div class="field"><label>Prisnotat</label><textarea id="ct-pricenote" rows="2"></textarea></div>
+    </div>
+    <div class="panel">
+      <h2>Kontakt</h2>
+      <div class="grid2">
+        <div class="field"><label>Adresse</label><input id="ct-address"></div>
+        <div class="field"><label>Telefon</label><input id="ct-phone"></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Vilkår</h2>
+      <div class="field"><label>Innledning</label><textarea id="ct-terms-intro" rows="2"></textarea></div>
+      <div class="field"><label>Punkter (ett per linje)</label><textarea id="ct-terms" rows="5"></textarea></div>
+    </div>
+    <div class="panel">
+      <h2>Avkryssingsbokser</h2>
+      <div class="muted" style="font-size:13px;margin-bottom:8px">Ett punkt per linje. Kunden må huke av alle for å kunne bestille.</div>
+      <div class="field"><textarea id="ct-checkboxes" rows="6"></textarea></div>
+    </div>
+    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+      <button class="btn primary" id="saveContent">Lagre alt innhold</button>
+      <span class="muted" style="font-size:12.5px">Endringene vises på bestillingssiden med én gang.</span>
     </div>
   </div>
 
@@ -354,7 +395,38 @@
       // slot time options from grid
       const times=slotGrid();$("slotTime").innerHTML=times.map(t=>`<option>${t}</option>`).join("");
       renderOverrides();
+      renderContent();
     }catch(e){}
+  }
+  function renderContent(){
+    const g=k=>SETTINGS[k]||"";
+    $("ct-eyebrow").value=g("content.eyebrow");
+    $("ct-headline").value=g("content.headline");
+    $("ct-tagline").value=g("content.tagline");
+    $("ct-pb").value=g("content.price_personbil");
+    $("ct-vb").value=g("content.price_varebil");
+    $("ct-pricenote").value=g("content.pricenote");
+    $("ct-address").value=g("content.address");
+    $("ct-phone").value=g("content.phone");
+    $("ct-terms-intro").value=g("content.terms_intro");
+    try{$("ct-terms").value=JSON.parse(g("content.terms")||"[]").join("\n");}catch(e){$("ct-terms").value="";}
+    try{$("ct-checkboxes").value=JSON.parse(g("content.checkboxes")||"[]").join("\n");}catch(e){$("ct-checkboxes").value="";}
+  }
+  async function saveContent(){
+    const lines=v=>JSON.stringify(v.split("\n").map(s=>s.trim()).filter(Boolean));
+    const items=[
+      ["content.eyebrow",$("ct-eyebrow").value],["content.headline",$("ct-headline").value],
+      ["content.tagline",$("ct-tagline").value],["content.price_personbil",$("ct-pb").value],
+      ["content.price_varebil",$("ct-vb").value],["content.pricenote",$("ct-pricenote").value],
+      ["content.address",$("ct-address").value],["content.phone",$("ct-phone").value],
+      ["content.terms_intro",$("ct-terms-intro").value],
+      ["content.terms",lines($("ct-terms").value)],["content.checkboxes",lines($("ct-checkboxes").value)],
+    ];
+    const btn=$("saveContent");btn.disabled=true;const t0=btn.textContent;btn.textContent="Lagrer…";
+    try{ for(const it of items){ await api("settings_set",{key:it[0],value:it[1]}); SETTINGS[it[0]]=it[1]; }
+      toast("Innhold lagret — vises på bestillingssiden nå.","ok"); }
+    catch(e){ toast("Kunne ikke lagre innhold.","bad"); }
+    finally{ btn.disabled=false;btn.textContent=t0; }
   }
   function slotGrid(){
     const open=(SETTINGS["booking.open"]||"08:00"),ls=(SETTINGS["booking.lunch_start"]||"11:30"),
@@ -414,6 +486,7 @@
 
   $("search").addEventListener("input",renderBookings);
   $("refresh").onclick=()=>{AVAIL=null;loadBookings();};
+  $("saveContent").onclick=saveContent;
 
   if(KEY){ api("login").then(r=>{if(r&&r.ok)showApp();else logout();}).catch(logout); }
 })();

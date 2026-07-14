@@ -301,34 +301,34 @@
       </div>
 
       <div class="svc">
-        <div class="eyebrow">Kampanjetilbud</div>
-        <h1>EU-kontroll</h1>
-        <p class="tagline">På tide med EU-kontroll? Lever bilen til oss, så dobbeltsjekker vi at den er klar for to nye år på veien — inn og ut på ca. 45 minutter.</p>
+        <div class="eyebrow" id="c-eyebrow">Kampanjetilbud</div>
+        <h1 id="c-headline">EU-kontroll</h1>
+        <p class="tagline" id="c-tagline">På tide med EU-kontroll? Lever bilen til oss, så dobbeltsjekker vi at den er klar for to nye år på veien — inn og ut på ca. 45 minutter.</p>
       </div>
 
       <div class="offer">
         <div class="chips">
-          <div class="chip"><u>Personbil</u><b>699 <small>kr</small></b></div>
-          <div class="chip"><u>Varebil</u><b>1300 <small>kr</small></b></div>
+          <div class="chip"><u>Personbil</u><b><span id="c-pb">699</span> <small>kr</small></b></div>
+          <div class="chip"><u>Varebil</u><b><span id="c-vb">1300</span> <small>kr</small></b></div>
         </div>
-        <p class="railnote">Gjelder alle personbiler — også elbil som <b>Tesla, NIO, Hongqi</b> m.fl. Forhandler, TAXI og kommersiell omsetning: ordinær pris kr 1300.</p>
+        <p class="railnote" id="c-pricenote">Gjelder alle personbiler — også elbil som Tesla, NIO, Hongqi m.fl. Forhandler, TAXI og kommersiell omsetning: ordinær pris kr 1300.</p>
       </div>
 
       <div class="facts">
         <div class="fact"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span><b>45 min</b> · rask og sømløs kontroll</span></div>
-        <div class="fact"><svg viewBox="0 0 24 24"><path d="M12 21s-7-5.2-7-11a7 7 0 0114 0c0 5.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.4"/></svg><span>Inges Gate 36, <b>2004 Lillestrøm</b></span></div>
+        <div class="fact"><svg viewBox="0 0 24 24"><path d="M12 21s-7-5.2-7-11a7 7 0 0114 0c0 5.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.4"/></svg><span id="c-address">Inges Gate 36, 2004 Lillestrøm</span></div>
         <div class="fact"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></svg><span>Man–fre · <b>08:00–16:00</b> (Oslo)</span></div>
-        <div class="fact"><svg viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 01-2.2 2 19.8 19.8 0 01-8.6-3.1 19.5 19.5 0 01-6-6 19.8 19.8 0 01-3.1-8.7A2 2 0 014.1 2h3a2 2 0 012 1.7c.1.9.3 1.8.6 2.6a2 2 0 01-.5 2.1L8 11.1a16 16 0 006 6l1.7-1.2a2 2 0 012.1-.4c.8.3 1.7.5 2.6.6a2 2 0 011.7 2z"/></svg><span>Spørsmål? <b>+47 40 32 41 41</b></span></div>
+        <div class="fact"><svg viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 01-2.2 2 19.8 19.8 0 01-8.6-3.1 19.5 19.5 0 01-6-6 19.8 19.8 0 01-3.1-8.7A2 2 0 014.1 2h3a2 2 0 012 1.7c.1.9.3 1.8.6 2.6a2 2 0 01-.5 2.1L8 11.1a16 16 0 006 6l1.7-1.2a2 2 0 012.1-.4c.8.3 1.7.5 2.6.6a2 2 0 011.7 2z"/></svg><span>Spørsmål? <b id="c-phone">+47 40 32 41 41</b></span></div>
       </div>
 
       <div class="terms">
-        <strong>Bindende time.</strong> Alle verkstedstimer er bindende. Trenger du å endre
-        eller avbestille, gi beskjed <strong>senest 24 timer før</strong> — regnet innenfor
-        åpningstiden man–fre 08:00–16:00.
-        <div class="rule">Endring av time kan kun gjøres én gang.</div>
-        <div class="rule">EU-kontroll (PKK) — ikke etterkontroll. Feil bestilling faktureres.</div>
-        <div class="rule">Ikke bobil, campingvogn/tilhenger eller kjøretøy over 3 500 kg.</div>
-        <div class="rule">Ta med vognkort del 1 og bilnøkkel. Ikke oppmøte faktureres.</div>
+        <p id="c-terms-intro" style="margin:0 0 6px">Alle verkstedstimer er bindende. Trenger du å endre eller avbestille, gi beskjed senest 24 timer før — regnet innenfor åpningstiden man–fre 08:00–16:00.</p>
+        <div id="c-terms-list">
+          <div class="rule">Endring av time kan kun gjøres én gang.</div>
+          <div class="rule">EU-kontroll (PKK) — ikke etterkontroll. Feil bestilling faktureres.</div>
+          <div class="rule">Ikke bobil, campingvogn/tilhenger eller kjøretøy over 3 500 kg.</div>
+          <div class="rule">Ta med vognkort del 1 og bilnøkkel. Ikke oppmøte faktureres.</div>
+        </div>
       </div>
     </aside>
 
@@ -392,11 +392,13 @@
 
             <fieldset>
               <legend>Bekreft vilkårene</legend>
-              <label class="chk"><input type="checkbox" data-req><span>Jeg bekrefter at jeg bestiller <b style="color:var(--fg)">EU-kontroll, ikke etterkontroll</b>.</span></label>
-              <label class="chk"><input type="checkbox" data-req><span>Jeg må vente på stedet under kontrollen og ta med bilen når den er ferdig.</span></label>
-              <label class="chk"><input type="checkbox" data-req><span>Timen er bindende. Ved bestilling mindre enn 24 timer før, kan den ikke avbestilles kostnadsfritt.</span></label>
-              <label class="chk"><input type="checkbox" data-req><span>Kjøretøyet er <b style="color:var(--fg)">under 3 500 kg</b> og er ikke bobil, campingvogn eller tilhenger.</span></label>
-              <label class="chk"><input type="checkbox" data-req><span>Jeg har lest, forstått og samtykker til verkstedets vilkår for EU-kontroll.</span></label>
+              <div id="c-checkboxes">
+                <label class="chk"><input type="checkbox" data-req><span>Jeg bekrefter at jeg bestiller EU-kontroll, ikke etterkontroll.</span></label>
+                <label class="chk"><input type="checkbox" data-req><span>Jeg må vente på stedet under kontrollen og ta med bilen når den er ferdig.</span></label>
+                <label class="chk"><input type="checkbox" data-req><span>Timen er bindende. Ved bestilling mindre enn 24 timer før, kan den ikke avbestilles kostnadsfritt.</span></label>
+                <label class="chk"><input type="checkbox" data-req><span>Kjøretøyet er under 3 500 kg og er ikke bobil, campingvogn eller tilhenger.</span></label>
+                <label class="chk"><input type="checkbox" data-req><span>Jeg har lest, forstått og samtykker til verkstedets vilkår for EU-kontroll.</span></label>
+              </div>
             </fieldset>
 
             <div class="err" id="err">Fyll ut alle felt og bekreft alle punktene for å fortsette.</div>
@@ -459,8 +461,21 @@
       AVAIL={};
       if(d&&d.days){ CAPDEFAULT=d.capacityDefault||2;
         d.days.forEach(x=>{AVAIL[x.date]={capacity:(x.slots[0]?x.slots[0].capacity:CAPDEFAULT),slots:x.slots};}); }
+      if(d&&d.content) applyContent(d.content);
     }catch(e){ loadErr=true; AVAIL={}; }
     renderMonth();
+  }
+  function escHtml(s){return String(s==null?"":s).replace(/[&<>]/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[ch]));}
+  function applyContent(c){
+    const set=(id,v)=>{const el=$(id);if(el&&v!=null&&v!=="")el.textContent=v;};
+    set("c-eyebrow",c.eyebrow); set("c-headline",c.headline); set("c-tagline",c.tagline);
+    set("c-pb",c.price_personbil); set("c-vb",c.price_varebil);
+    set("c-pricenote",c.pricenote); set("c-address",c.address); set("c-phone",c.phone);
+    set("c-terms-intro",c.terms_intro);
+    try{const terms=JSON.parse(c.terms||"[]");
+      if(terms.length)$("c-terms-list").innerHTML=terms.map(t=>`<div class="rule">${escHtml(t)}</div>`).join("");}catch(e){}
+    try{const cbs=JSON.parse(c.checkboxes||"[]");
+      if(cbs.length)$("c-checkboxes").innerHTML=cbs.map(t=>`<label class="chk"><input type="checkbox" data-req><span>${escHtml(t)}</span></label>`).join("");}catch(e){}
   }
 
   const $=id=>document.getElementById(id);
