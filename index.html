@@ -76,7 +76,7 @@
     .panel{padding:18px 16px 28px}
     .steps{padding:16px 16px 0}
     .phead h2{font-size:18px}
-    .themetoggle,.preview-tag{bottom:8px}
+    .preview-tag{bottom:8px}
     .field input,.phone input,.phone .flag{font-size:16px}
     .field input{padding:13px 14px}
     .submit{flex-direction:column;align-items:stretch;gap:12px}
@@ -141,15 +141,19 @@
   .topbar i{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,var(--red-deep),var(--red));
     width:25%;transition:width .5s cubic-bezier(.2,.8,.2,1);box-shadow:0 0 14px var(--red-glow)}
 
-  .steps{display:flex;gap:6px;padding:20px 30px 0;flex-wrap:wrap}
-  .step{display:flex;align-items:center;gap:9px;font-size:12px;font-weight:600;color:var(--fg-soft);
-    padding:7px 12px 7px 8px;border-radius:999px}
-  .step .n{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:11px;
-    font-family:var(--mono);background:var(--card-2);border:1px solid var(--line-2);color:var(--fg-soft)}
-  .step.on{color:var(--fg)}
-  .step.on .n{background:var(--red);border-color:var(--red);color:#fff;box-shadow:0 0 0 4px var(--red-soft)}
-  .step.done .n{background:transparent;border-color:var(--avail);color:var(--avail)}
-  .step .sep{width:14px;height:1px;background:var(--line-2)}
+  .steps{display:flex;align-items:center;gap:6px;padding:20px 26px 4px}
+  .step{display:flex;align-items:center;gap:9px;font-size:12.5px;font-weight:600;color:var(--fg-soft);
+    padding:6px 13px 6px 6px;border-radius:999px;transition:color .25s,background .25s}
+  .step .n{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:11.5px;
+    font-family:var(--mono);background:var(--card-2);border:1px solid var(--line-2);color:var(--fg-soft);
+    transition:background .25s,border-color .25s,color .25s}
+  .step .lbl{white-space:nowrap}
+  .step.on{color:var(--fg);background:var(--red-soft)}
+  .step.on .n{background:var(--red);border-color:var(--red);color:#fff;animation:stepPulse 2.4s ease-in-out infinite}
+  .step.done{color:var(--fg)}
+  .step.done .n{background:var(--avail);border-color:var(--avail);color:#fff;font-size:0}
+  .step.done .n::after{content:"✓";font-size:13px;line-height:1;color:#fff;font-family:var(--sans)}
+  .sep{flex:1;height:2px;min-width:8px;max-width:44px;border-radius:2px;background:var(--line-2)}
 
   .panel{padding:22px 30px 30px;flex:1}
   .phead{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:16px}
@@ -158,6 +162,16 @@
   .view{display:none;animation:rise .45s cubic-bezier(.2,.8,.2,1) both}
   .view.show{display:block}
   @keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  /* premium micro-animations */
+  @keyframes stepPulse{0%{box-shadow:0 0 0 0 rgba(228,3,46,.38)}70%{box-shadow:0 0 0 7px rgba(228,3,46,0)}100%{box-shadow:0 0 0 0 rgba(228,3,46,0)}}
+  @keyframes slotIn{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:none}}
+  .board>*{animation:slotIn .42s cubic-bezier(.2,.8,.2,1) both}
+  .board>*:nth-child(1){animation-delay:.02s}.board>*:nth-child(2){animation-delay:.05s}
+  .board>*:nth-child(3){animation-delay:.08s}.board>*:nth-child(4){animation-delay:.11s}
+  .board>*:nth-child(5){animation-delay:.14s}.board>*:nth-child(6){animation-delay:.17s}
+  .board>*:nth-child(7){animation-delay:.20s}.board>*:nth-child(8){animation-delay:.23s}
+  .board>*:nth-child(9){animation-delay:.26s}.board>*:nth-child(n+10){animation-delay:.29s}
+  .grid .day{animation:slotIn .4s ease both}
 
   /* calendar */
   .calbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
@@ -298,7 +312,10 @@
   .themetoggle button.on{background:var(--red);color:#fff}
   .themetoggle button:not(.on):hover{color:var(--fg)}
   .themetoggle svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2}
-  @media (max-width:840px){.themetoggle{top:auto;bottom:12px;right:12px}}
+  @media (max-width:840px){.themetoggle{top:10px;right:10px;bottom:auto;padding:2px;box-shadow:0 6px 18px -6px rgba(0,0,0,.5)}
+    .themetoggle button{padding:6px 11px}}
+  @media (max-width:520px){.step:not(.on) .lbl{display:none}
+    .steps{gap:5px;padding:16px 14px 2px}.sep{max-width:none}}
 
   /* confirmation action buttons */
   .actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:22px}
@@ -348,10 +365,10 @@
       <div class="topbar"><i id="bar"></i></div>
 
       <div class="steps" id="steps">
-        <div class="step on" data-s="1"><span class="n">1</span>Dato</div><span class="sep"></span>
-        <div class="step" data-s="2"><span class="n">2</span>Tid</div><span class="sep"></span>
-        <div class="step" data-s="3"><span class="n">3</span>Detaljer</div><span class="sep"></span>
-        <div class="step" data-s="4"><span class="n">4</span>Bekreftet</div>
+        <div class="step on" data-s="1"><span class="n">1</span><span class="lbl">Dato</span></div><span class="sep"></span>
+        <div class="step" data-s="2"><span class="n">2</span><span class="lbl">Tid</span></div><span class="sep"></span>
+        <div class="step" data-s="3"><span class="n">3</span><span class="lbl">Detaljer</span></div><span class="sep"></span>
+        <div class="step" data-s="4"><span class="n">4</span><span class="lbl">Bekreftet</span></div>
       </div>
 
       <div class="panel">
