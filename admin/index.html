@@ -221,6 +221,7 @@
       <button class="tab" data-v="capacity">Kapasitet</button>
       <button class="tab" data-v="content">Innhold</button>
       <button class="tab" data-v="block">Blokkering</button>
+      <button class="tab" data-v="email">E-post</button>
     </div>
     <div class="hgroup">
       <div class="themetoggle" id="tt">
@@ -349,6 +350,50 @@
       <tbody id="blBody"><tr><td colspan="4" class="muted" style="padding:16px">Laster…</td></tr></tbody>
     </table></div>
   </div>
+
+  <!-- EMAIL -->
+  <div class="view" id="v-email">
+    <div class="panel">
+      <h2>Avsender &amp; SMTP</h2>
+      <div class="muted" style="font-size:13px;margin-bottom:12px">E-postene sendes fra denne kontoen. NorbitsCalendly-boten må kjøre for at e-post skal sendes.</div>
+      <div class="grid2">
+        <div class="field"><label>Avsendernavn</label><input id="em-fromname" placeholder="Supero Performance AS"></div>
+        <div class="field"><label>Verkstedadresse (vises i e-post)</label><input id="em-address" placeholder="Inges Gate 36, 2004 Lillestrøm"></div>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>SMTP-server</label><input id="em-host" placeholder="smtp.domeneshop.no"></div>
+        <div class="field"><label>Port</label><input id="em-port" class="mono" placeholder="587"></div>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>Brukernavn / e-post</label><input id="em-user" placeholder="post@superoperformance.no"></div>
+        <div class="field"><label>Passord</label><input id="em-pass" type="password" placeholder="•••••• (lagret)"><span class="muted" id="em-passnote" style="font-size:12px">La stå tomt for å beholde passordet.</span></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Automatiske e-poster</h2>
+      <div class="grid2">
+        <div class="field"><label>Bekreftelse ved bestilling</label><select id="em-confirm"><option value="1">På</option><option value="0">Av</option></select></div>
+        <div class="field"><label>Påminnelse før timen</label><select id="em-reminder"><option value="1">På</option><option value="0">Av</option></select></div>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>Påminnelse sendes (timer før timen)</label><input id="em-remhours" class="mono" placeholder="24"></div>
+        <div class="field"><label>Avbestillingsfrist vist til kunden (timer)</label><input id="em-cutoff" class="mono" placeholder="24"></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:22px">
+      <button class="btn primary" id="saveEmail">Lagre e-postinnstillinger</button>
+      <span class="muted" style="font-size:12.5px">Endringer gjelder fra bot-ens neste syklus.</span>
+    </div>
+    <div class="panel">
+      <h2>Send testmail</h2>
+      <div class="muted" style="font-size:13px;margin-bottom:12px">Sender en eksempel-bekreftelse. Boten sender den ved neste sjekk (innen få minutter).</div>
+      <div class="inline">
+        <div class="field" style="flex:1;min-width:220px"><label>Mottaker</label><input id="em-test-to" placeholder="post@bilforalle.no"></div>
+        <button class="btn primary sm" id="sendTest">Send test</button>
+      </div>
+      <div class="muted" id="em-test-status" style="font-size:12.5px;margin-top:10px"></div>
+    </div>
+  </div>
 </div>
 
 <!-- reschedule modal -->
@@ -452,7 +497,61 @@
   document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
     document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("on",x===t));
     document.querySelectorAll(".view").forEach(v=>v.classList.toggle("on",v.id==="v-"+t.dataset.v));
+    if(t.dataset.v==="email")loadEmail();
   });
+
+  // ── email settings ──
+  let EMAIL={};
+  async function loadEmail(){
+    try{
+      const r=await api("email_get"); EMAIL=r.email||{};
+      $("em-fromname").value=EMAIL.from_name||"";
+      $("em-address").value=EMAIL.address||"";
+      $("em-host").value=EMAIL.smtp_host||"";
+      $("em-port").value=EMAIL.smtp_port||"";
+      $("em-user").value=EMAIL.smtp_user||"";
+      $("em-pass").value="";
+      $("em-passnote").textContent=EMAIL.smtp_pass_set
+        ? "Passord er lagret. La stå tomt for å beholde det."
+        : "Ingen passord lagret ennå.";
+      $("em-confirm").value=EMAIL.confirm_enabled?"1":"0";
+      $("em-reminder").value=EMAIL.reminder_enabled?"1":"0";
+      $("em-remhours").value=EMAIL.reminder_hours||"24";
+      $("em-cutoff").value=EMAIL.customer_cutoff_hours||"24";
+      let st="";
+      if(EMAIL.test_pending) st="Testmail står i kø – sendes ved neste bot-syklus.";
+      else if(EMAIL.test_result) st="Siste test: "+EMAIL.test_result;
+      $("em-test-status").textContent=st;
+    }catch(e){ toast("Kunne ikke laste e-postinnstillinger","bad"); }
+  }
+  $("saveEmail").onclick=async()=>{
+    const s={
+      from_name:$("em-fromname").value.trim(),
+      address:$("em-address").value.trim(),
+      smtp_host:$("em-host").value.trim(),
+      smtp_port:$("em-port").value.trim(),
+      smtp_user:$("em-user").value.trim(),
+      confirm_enabled:$("em-confirm").value==="1",
+      reminder_enabled:$("em-reminder").value==="1",
+      reminder_hours:$("em-remhours").value.trim()||"24",
+      customer_cutoff_hours:$("em-cutoff").value.trim()||"24",
+    };
+    const pw=$("em-pass").value;
+    if(pw) s.smtp_pass=pw;
+    try{ const r=await api("email_set",{settings:s});
+      if(r.ok){ toast("E-postinnstillinger lagret"); loadEmail(); }
+      else toast("Kunne ikke lagre","bad"); }
+    catch(e){ toast("Feil ved lagring","bad"); }
+  };
+  $("sendTest").onclick=async()=>{
+    const to=$("em-test-to").value.trim();
+    if(!to||to.indexOf("@")<1){ toast("Skriv inn en gyldig e-post","bad"); return; }
+    try{ const r=await api("email_test",{to});
+      if(r.ok){ toast("Testmail lagt i kø");
+        $("em-test-status").textContent="Testmail står i kø – sendes ved neste bot-syklus (innen få minutter)."; }
+      else toast(r.error==="e-post"?"Ugyldig e-post":"Kunne ikke sende test","bad"); }
+    catch(e){ toast("Feil ved testsending","bad"); }
+  };
 
   // ── bookings ──
   async function loadBookings(){
