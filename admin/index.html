@@ -525,7 +525,7 @@
           <div class="dcell"><u>Opprettet</u><span>${created?created.toLocaleString("nb-NO"):"—"}</span></div>
         </div>
         ${(b.norbits_id||canAct)?`<div class="dactions">
-          ${b.norbits_id?`<a class="btn ghost sm" href="https://verksted.norbits.no/superoperformance/CustomerSearch/Search?searchText=${encodeURIComponent(b.license_plate||"")}&ShowAll=false" target="_blank" rel="noopener">Åpne i Norbits ↗</a>`:""}
+          ${b.norbits_id?`<a class="btn ghost sm" href="https://verksted.norbits.no/superoperformance/Search/LicensePlateSearchAsync?licensePlate=${encodeURIComponent(b.license_plate||"")}" target="_blank" rel="noopener">Åpne i Norbits ↗</a>`:""}
           ${canAct?`<button class="btn ghost sm" data-rs="${esc(b.calendly_uuid)}">Flytt time</button><button class="btn danger sm" data-cx="${esc(b.calendly_uuid)}">Avbestill</button>`:""}
         </div>`:""}
       </div>
