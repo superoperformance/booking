@@ -100,7 +100,17 @@
   .tgroup{border-bottom:1px solid var(--line)}
   .tgroup:last-child{border-bottom:none}
   .tlabel{font-family:var(--mono);font-size:12px;color:var(--muted);padding:8px 16px 2px;font-weight:600}
-  .tcount{color:var(--red);margin-left:6px}
+  .tcount{color:var(--red);font-weight:700}
+  .thead{display:flex;align-items:center;gap:12px;padding:12px 16px;cursor:pointer;user-select:none}
+  .thead:hover{background:var(--panel2)}
+  .thead .ttime{font-family:var(--mono);font-weight:600;font-size:14px}
+  .thead .chev{margin-left:auto;font-size:11px}
+  .tgroup.open>.thead .chev{transform:rotate(180deg)}
+  .tbody{display:none}
+  .tgroup.open .tbody{display:block}
+  .hours-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:14px;margin-bottom:6px}
+  .slotpreview{margin-top:14px;padding:12px 16px;border-radius:11px;background:var(--panel2);border:1px solid var(--line2);font-size:13px;line-height:1.7}
+  .slotpreview .mono{font-size:12.5px;color:var(--muted)}
   .bcard{border-top:1px solid rgba(255,255,255,.04)}
   .bcard-head{display:grid;grid-template-columns:1fr 74px 84px 18px;gap:10px;align-items:center;padding:10px 16px;cursor:pointer}
   .bcard-head:hover{background:var(--panel2)}
@@ -200,6 +210,19 @@
   <!-- CAPACITY -->
   <div class="view" id="v-capacity">
     <div class="panel">
+      <h2>Åpningstider</h2>
+      <div class="muted" style="font-size:13px;margin-bottom:14px">Gjelder mandag–fredag. Bestillingstidene beregnes automatisk fra disse — endre dem for å få færre eller flere tidspunkt.</div>
+      <div class="hours-grid">
+        <div class="field"><label>Åpner</label><input id="hOpen" type="time"></div>
+        <div class="field"><label>Lunsj fra</label><input id="hLunchS" type="time"></div>
+        <div class="field"><label>Lunsj til</label><input id="hLunchE" type="time"></div>
+        <div class="field"><label>Stenger</label><input id="hClose" type="time"></div>
+        <div class="field"><label>Minutter per kontroll</label><input id="hSlot" class="mono" type="number" min="15" step="5" style="max-width:110px"></div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:center;margin-top:6px"><button class="btn primary sm" id="saveHours">Lagre åpningstider</button></div>
+      <div class="slotpreview" id="slotPreview"></div>
+    </div>
+    <div class="panel">
       <h2>Kontrollører på jobb</h2>
       <div class="muted" style="font-size:13px;margin-bottom:12px">Hvor mange biler dere kan ta inn samtidig — altså hvor mange kontrollører som gjør EU-kontroll.</div>
       <div class="inline">
@@ -207,6 +230,11 @@
         <button class="btn primary sm" id="saveCapDef">Lagre</button>
       </div>
       <div class="totalbox" id="capTotal"></div>
+      <div class="inline" style="margin-top:16px">
+        <div class="field"><label>Maks bestillinger per dag (alle dager)</label><input id="dayMaxDef" class="mono" type="number" min="0" style="max-width:150px" placeholder="ingen grense"></div>
+        <button class="btn primary sm" id="saveDayMaxDef">Lagre</button>
+      </div>
+      <div class="muted" style="font-size:12px;margin-top:6px">Begrens totalt antall biler hver dag, selv om kapasiteten tillater flere. Tomt = ingen grense. Overstyres av egne dagsregler i kalenderen under.</div>
     </div>
     <div class="panel">
       <h2>Kapasitet per dag</h2>
@@ -407,7 +435,10 @@
       const byTime={};rows.forEach(b=>{const t=new Date(b.start_time);const tt=isNaN(t)?"—":String(t.getHours()).padStart(2,"0")+":"+String(t.getMinutes()).padStart(2,"0");(byTime[tt]=byTime[tt]||[]).push(b);});
       const body=Object.keys(byTime).sort().map(tt=>{
         const list=byTime[tt];
-        return `<div class="tgroup"><div class="tlabel">${tt}${list.length>1?` <span class="tcount">${list.length} biler</span>`:""}</div>${list.map(bookingCard).join("")}</div>`;
+        if(list.length===1){
+          return `<div class="tgroup single"><div class="tlabel">${tt}</div>${bookingCard(list[0])}</div>`;
+        }
+        return `<div class="tgroup"><div class="thead"><span class="ttime">${tt}</span><span class="tcount">${list.length} biler</span><span class="chev">▾</span></div><div class="tbody">${list.map(bookingCard).join("")}</div></div>`;
       }).join("");
       return `<div class="daygroup${openDays.has(k)?' open':''}">
         <div class="dayhead${isT?' today':''}" data-day="${k}">
@@ -453,6 +484,7 @@
     const rs=e.target.closest("[data-rs]");if(rs){e.stopPropagation();openReschedule(rs.dataset.rs);return;}
     const cx=e.target.closest("[data-cx]");if(cx){e.stopPropagation();doCancel(cx.dataset.cx);return;}
     const head=e.target.closest(".bcard-head");if(head){head.parentElement.classList.toggle("open");return;}
+    const th=e.target.closest(".thead");if(th){th.parentElement.classList.toggle("open");return;}
     const dh=e.target.closest(".dayhead");if(dh){const k=dh.dataset.day;if(openDays.has(k))openDays.delete(k);else openDays.add(k);dh.parentElement.classList.toggle("open");return;}
   });
   async function doCancel(uuid){
@@ -498,7 +530,7 @@
       if(BOOKINGS.length)renderBookings();
       renderEmployees();
       $("capDef").value=SETTINGS["booking.capacity_default"]||"2";
-      // slot time options from grid
+      renderHours();
       updateTotal();
       renderCapCalendar();
       renderContent();
@@ -544,9 +576,49 @@
     return out;
   }
   function updateTotal(){
-    const c=parseInt($("capDef").value||"2");const slots=slotGrid().length;
-    $("capTotal").innerHTML=`Med <b>${c}</b> kontrollør${c===1?"":"er"} kan dere ta imot inntil <b>${slots*c}</b> biler per dag &nbsp;·&nbsp; ${slots} tidspunkt × ${c} samtidig.`;
+    const c=parseInt($("capDef").value||"2");const slots=slotGrid().length;const raw=slots*c;
+    const dm=SETTINGS["booking.day_max_default"]||"";const capped=/^\d+$/.test(dm);
+    let msg=`Med <b>${c}</b> kontrollør${c===1?"":"er"} og <b>${slots}</b> tidspunkt: inntil <b>${raw}</b> biler per dag (${slots} × ${c}).`;
+    if(capped)msg+=` &nbsp;·&nbsp; Begrenset til <b>${dm}</b> per dag.`;
+    $("capTotal").innerHTML=msg;
   }
+  // opening hours
+  function m2s(s){const x=(s||"").match(/^(\d{1,2}):(\d{2})$/);return x?(+x[1])*60+(+x[2]):null;}
+  function computeSlots(open,ls,le,close,slot){
+    const O=m2s(open),LS=m2s(ls),LE=m2s(le),C=m2s(close);
+    if(O==null||LS==null||LE==null||C==null||!slot)return[];
+    const out=[];for(const w of [[O,LS],[LE,C]]){let t=w[0];while(t+slot<=w[1]){out.push(String(Math.floor(t/60)).padStart(2,"0")+":"+String(t%60).padStart(2,"0"));t+=slot;}}
+    return out;
+  }
+  function updateSlotPreview(){
+    const slots=computeSlots($("hOpen").value,$("hLunchS").value,$("hLunchE").value,$("hClose").value,parseInt($("hSlot").value||"45"));
+    const cap=parseInt($("capDef").value||"2");
+    $("slotPreview").innerHTML=slots.length?
+      `<b>${slots.length} tidspunkt</b> per dag: <span class="mono">${slots.join("  ")}</span><br>Med ${cap} kontrollør${cap===1?"":"er"} = <b>${slots.length*cap} biler per dag</b>.`
+      :`<span style="color:var(--danger)">Sjekk tidene — ingen gyldige tidspunkt.</span>`;
+  }
+  function renderHours(){
+    $("hOpen").value=SETTINGS["booking.open"]||"08:00";
+    $("hLunchS").value=SETTINGS["booking.lunch_start"]||"11:30";
+    $("hLunchE").value=SETTINGS["booking.lunch_end"]||"12:00";
+    $("hClose").value=SETTINGS["booking.close"]||"16:00";
+    $("hSlot").value=SETTINGS["booking.slot_minutes"]||"45";
+    $("dayMaxDef").value=SETTINGS["booking.day_max_default"]||"";
+    updateSlotPreview();
+  }
+  ["hOpen","hLunchS","hLunchE","hClose","hSlot"].forEach(id=>$(id).addEventListener("input",updateSlotPreview));
+  $("saveHours").onclick=async()=>{
+    const items=[["booking.open",$("hOpen").value],["booking.lunch_start",$("hLunchS").value],["booking.lunch_end",$("hLunchE").value],["booking.close",$("hClose").value],["booking.slot_minutes",$("hSlot").value||"45"]];
+    const btn=$("saveHours");btn.disabled=true;
+    try{for(const it of items){await api("settings_set",{key:it[0],value:it[1]});SETTINGS[it[0]]=it[1];}
+      updateTotal();renderCapCalendar();updateSlotPreview();toast("Åpningstider lagret — vises på bestillingssiden nå.","ok");}
+    catch(e){toast("Feil.","bad");}finally{btn.disabled=false;}
+  };
+  $("saveDayMaxDef").onclick=async()=>{
+    const v=$("dayMaxDef").value.trim();
+    const r=await api("settings_set",{key:"booking.day_max_default",value:v});
+    if(r.ok){SETTINGS["booking.day_max_default"]=v;updateTotal();toast("Lagret.","ok");}else toast("Feil.","bad");
+  };
   let cpView=null,capDate=null;
   function renderCapCalendar(){
     if(!cpView){const t=new Date();cpView=new Date(t.getFullYear(),t.getMonth(),1);}
