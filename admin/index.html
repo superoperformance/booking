@@ -5,8 +5,15 @@
     --bg:#0f1216;--panel:#171b21;--panel2:#12151a;--fg:#eef0f3;--muted:#98a0ad;
     --line:rgba(255,255,255,.10);--line2:rgba(255,255,255,.16);
     --green:#37b26a;--amber:#e6a017;--danger:#e0555f;
+    --shadow:0 1px 2px rgba(0,0,0,.35),0 14px 34px -18px rgba(0,0,0,.6);
     --mono:"SF Mono","JetBrains Mono","Roboto Mono",ui-monospace,Menlo,monospace;
     --sans:"Helvetica Neue",-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+  }
+  :root[data-theme="light"]{
+    --red-soft:rgba(228,3,46,.10);
+    --bg:#f3f2ef;--panel:#ffffff;--panel2:#f6f4f1;--fg:#16191e;--muted:#5c6470;
+    --line:#e7e4de;--line2:#dcd8d0;
+    --shadow:0 1px 2px rgba(20,16,14,.05),0 14px 34px -20px rgba(20,16,14,.22);
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--sans);-webkit-font-smoothing:antialiased}
@@ -41,11 +48,18 @@
   .err{color:var(--danger);font-size:12.5px;margin-top:10px;min-height:1em}
 
   /* app */
-  #app{display:none;max-width:1080px;margin:0 auto;padding:20px}
-  header.top{display:flex;align-items:center;justify-content:space-between;padding:6px 2px 18px;border-bottom:1px solid var(--line);margin-bottom:20px;flex-wrap:wrap;gap:10px}
-  .tabs{display:flex;gap:4px;flex-wrap:wrap}
-  .tab{background:none;border:none;color:var(--muted);font:inherit;font-weight:600;font-size:14px;padding:9px 15px;border-radius:9px;cursor:pointer}
-  .tab.on{background:var(--red);color:#fff}
+  #app{display:none;max-width:1060px;margin:0 auto;padding:26px 24px 60px}
+  header.top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:26px;flex-wrap:wrap}
+  .tabs{display:flex;gap:3px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:4px;box-shadow:var(--shadow)}
+  .tab{background:none;border:none;color:var(--muted);font:inherit;font-weight:600;font-size:14px;padding:9px 18px;border-radius:9px;cursor:pointer;transition:.15s}
+  .tab:not(.on):hover{color:var(--fg);background:var(--panel2)}
+  .tab.on{background:var(--red);color:#fff;box-shadow:0 4px 12px -4px var(--red-soft)}
+  .hgroup{display:flex;align-items:center;gap:12px}
+  .themetoggle{display:flex;gap:2px;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:3px}
+  .themetoggle button{border:none;background:none;color:var(--muted);font:inherit;font-size:12px;font-weight:600;padding:6px 12px;border-radius:999px;cursor:pointer;display:flex;align-items:center;gap:5px}
+  .themetoggle button.on{background:var(--red);color:#fff}
+  .themetoggle svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2}
+  .panel{box-shadow:var(--shadow)}
   .tab:not(.on):hover{color:var(--fg);background:var(--panel)}
   .view{display:none}.view.on{display:block}
   .row-actions{display:flex;gap:6px;align-items:center;justify-content:flex-end}
@@ -165,6 +179,20 @@
   .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;place-items:center;padding:20px;z-index:50}
   .modal.on{display:grid}
   .modal .card{max-width:420px}
+  .modal .card.rscard{max-width:640px;width:100%}
+  .rslayout{display:grid;grid-template-columns:1fr 200px;gap:20px;margin-top:14px}
+  @media(max-width:600px){.rslayout{grid-template-columns:1fr}}
+  .rsgrid .cpday{min-height:40px;aspect-ratio:auto;padding:6px 0}
+  .cpday.sel{background:var(--red)!important;border-color:var(--red)!important;color:#fff}
+  .cpday.sel .d{color:#fff}
+  .rsslots-head{font-weight:700;font-size:13px;margin-bottom:10px}
+  .rsslot{display:block;width:100%;text-align:left;font:inherit;font-size:13.5px;font-family:var(--mono);
+    padding:10px 12px;margin-bottom:6px;border-radius:9px;border:1px solid var(--line2);background:var(--panel2);color:var(--fg);cursor:pointer;transition:.15s}
+  .rsslot:hover{border-color:var(--red)}
+  .rsslot.on{background:var(--red);border-color:var(--red);color:#fff}
+  .rsslot .muted{font-size:11px}
+  .rsslot.on .muted{color:rgba(255,255,255,.75)}
+  .rsslots{max-height:320px;overflow-y:auto}
 </style>
 
 <!-- LOGIN -->
@@ -194,7 +222,13 @@
       <button class="tab" data-v="content">Innhold</button>
       <button class="tab" data-v="block">Blokkering</button>
     </div>
-    <button class="btn ghost sm" id="logout">Logg ut</button>
+    <div class="hgroup">
+      <div class="themetoggle" id="tt">
+        <button data-t="dark" class="on"><svg viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"/></svg>Mørk</button>
+        <button data-t="light"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19"/></svg>Lys</button>
+      </div>
+      <button class="btn ghost sm" id="logout">Logg ut</button>
+    </div>
   </header>
 
   <!-- BOOKINGS -->
@@ -319,15 +353,27 @@
 
 <!-- reschedule modal -->
 <div class="modal" id="rsModal">
-  <div class="card">
+  <div class="card rscard">
     <h1 style="font-size:17px">Flytt time</h1>
     <div class="sub" id="rsWho"></div>
-    <div class="field"><label>Ny dato</label><select id="rsDate"></select></div>
-    <div class="field"><label>Ny tid</label><select id="rsTime"></select></div>
+    <div class="rslayout">
+      <div>
+        <div class="calbar"><b id="rsMonth">—</b><div class="nav"><button class="btn ghost sm" id="rsPrev">‹</button><button class="btn ghost sm" id="rsNext">›</button></div></div>
+        <div class="cpdow"><div>Man</div><div>Tir</div><div>Ons</div><div>Tor</div><div>Fre</div><div>Lør</div><div>Søn</div></div>
+        <div class="cpgrid rsgrid" id="rsGrid"></div>
+      </div>
+      <div class="rsslots">
+        <div class="rsslots-head" id="rsSlotHead">Velg en dag</div>
+        <div id="rsSlots"></div>
+      </div>
+    </div>
     <div class="err" id="rsErr"></div>
-    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px">
-      <button class="btn ghost sm" id="rsCancel">Avbryt</button>
-      <button class="btn primary sm" id="rsConfirm">Flytt timen</button>
+    <div style="display:flex;gap:8px;justify-content:space-between;align-items:center;margin-top:12px">
+      <span class="muted" id="rsPick" style="font-size:12.5px"></span>
+      <div style="display:flex;gap:8px">
+        <button class="btn ghost sm" id="rsCancel">Avbryt</button>
+        <button class="btn primary sm" id="rsConfirm">Flytt timen</button>
+      </div>
     </div>
   </div>
 </div>
@@ -390,6 +436,11 @@
   function showApp(){$("login").style.display="none";$("app").style.display="block";loadBookings();loadSettings();loadBlock();}
   function logout(){sessionStorage.removeItem("sp_admin_key");KEY="";$("app").style.display="none";$("login").style.display="grid";}
   $("logout").onclick=logout;
+  function applyTheme(t){document.documentElement.dataset.theme=t;
+    try{localStorage.setItem("sp_admin_theme",t);}catch(e){}
+    document.querySelectorAll("#tt button").forEach(b=>b.classList.toggle("on",b.dataset.t===t));}
+  $("tt").addEventListener("click",e=>{const b=e.target.closest("button");if(b)applyTheme(b.dataset.t);});
+  applyTheme((function(){try{return localStorage.getItem("sp_admin_theme")||"dark";}catch(e){return "dark";}})());
   $("loginForm").addEventListener("submit",async e=>{
     e.preventDefault();KEY=$("key").value.trim();$("loginErr").textContent="";
     try{const res=await api("login");if(res.ok){sessionStorage.setItem("sp_admin_key",KEY);showApp();}
@@ -473,7 +524,10 @@
           <div class="dcell"><u>Norbits</u><span>${nb}</span></div>
           <div class="dcell"><u>Opprettet</u><span>${created?created.toLocaleString("nb-NO"):"—"}</span></div>
         </div>
-        ${canAct?`<div class="dactions"><button class="btn ghost sm" data-rs="${esc(b.calendly_uuid)}">Flytt time</button><button class="btn danger sm" data-cx="${esc(b.calendly_uuid)}">Avbestill</button></div>`:""}
+        ${(b.norbits_id||canAct)?`<div class="dactions">
+          ${b.norbits_id?`<a class="btn ghost sm" href="https://verksted.norbits.no/superoperformance/CustomerSearch/Search?searchText=${encodeURIComponent(b.license_plate||"")}&ShowAll=false" target="_blank" rel="noopener">Åpne i Norbits ↗</a>`:""}
+          ${canAct?`<button class="btn ghost sm" data-rs="${esc(b.calendly_uuid)}">Flytt time</button><button class="btn danger sm" data-cx="${esc(b.calendly_uuid)}">Avbestill</button>`:""}
+        </div>`:""}
       </div>
     </div>`;
   }
@@ -494,32 +548,56 @@
       else toast("Kunne ikke avbestille.","bad");}catch(e){toast("Feil.","bad");}
   }
 
-  // ── reschedule ──
-  let rsUuid=null;
-  async function ensureAvail(){ if(!AVAIL){ const r=await fetch(API+"/availability",{headers:{"Authorization":"Bearer "+ANON,"apikey":ANON}}); AVAIL=await r.json(); } return AVAIL; }
+  // ── reschedule (visual calendar) ──
   const ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhtZWtpZWVka3N4eGF5ZmdqaGdkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNDYzMTUsImV4cCI6MjA5NTYyMjMxNX0.9W_B46OXBTOTm4DKelE7dzmayglTvJyENFLdt0v4aD4";
+  let rsUuid=null, rsView=null, rsDateSel=null, rsSlotUtc=null, rsAvail={};
+  async function ensureAvail(){ if(!AVAIL){ const r=await fetch(API+"/availability",{headers:{"Authorization":"Bearer "+ANON,"apikey":ANON}}); AVAIL=await r.json(); } rsAvail={}; (AVAIL.days||[]).forEach(d=>rsAvail[d.date]=d); return AVAIL; }
   async function openReschedule(uuid){
-    rsUuid=uuid;const b=BOOKINGS.find(x=>x.calendly_uuid===uuid);
-    $("rsWho").textContent=(b?b.customer_name+" · "+b.license_plate+" · "+fmtDT(b.start_time):"");
-    $("rsErr").textContent="";
-    const av=await ensureAvail();
-    const ds=$("rsDate");ds.innerHTML=(av.days||[]).map(d=>`<option value="${d.date}">${d.date}</option>`).join("");
-    ds.onchange=fillRsTimes;fillRsTimes();
+    rsUuid=uuid;rsDateSel=null;rsSlotUtc=null;const b=BOOKINGS.find(x=>x.calendly_uuid===uuid);
+    $("rsWho").textContent=(b?b.customer_name+" · "+b.license_plate+" · fra "+fmtDT(b.start_time):"");
+    $("rsErr").textContent="";$("rsPick").textContent="";$("rsSlots").innerHTML="";$("rsSlotHead").textContent="Velg en dag";
+    await ensureAvail();
+    const t=new Date();rsView=new Date(t.getFullYear(),t.getMonth(),1);
+    renderRsCal();
     $("rsModal").classList.add("on");
   }
-  function fillRsTimes(){
-    const day=(AVAIL.days||[]).find(d=>d.date===$("rsDate").value);
-    const ts=$("rsTime");
-    ts.innerHTML=(day?day.slots:[]).filter(s=>s.left>0).map(s=>`<option value="${s.start_utc}">${s.time} (${s.left} ledig)</option>`).join("")
-      ||'<option value="">Ingen ledige</option>';
+  function renderRsCal(){
+    $("rsMonth").textContent=MONTHSLONG[rsView.getMonth()].replace(/^./,c=>c.toUpperCase())+" "+rsView.getFullYear();
+    const grid=$("rsGrid");grid.innerHTML="";
+    const first=new Date(rsView.getFullYear(),rsView.getMonth(),1);
+    const lead=(first.getDay()+6)%7;
+    const dim=new Date(rsView.getFullYear(),rsView.getMonth()+1,0).getDate();
+    for(let i=0;i<lead;i++)grid.appendChild(document.createElement("div"));
+    for(let dd=1;dd<=dim;dd++){
+      const cell=new Date(rsView.getFullYear(),rsView.getMonth(),dd);const ds=dayKey(cell);
+      const open=!!rsAvail[ds];
+      const el=document.createElement("div");el.className="cpday"+(open?"":" off")+(rsDateSel===ds?" sel":"");
+      el.innerHTML=`<span class="d">${dd}</span>`;
+      if(open)el.onclick=()=>{rsDateSel=ds;rsSlotUtc=null;$("rsPick").textContent="";renderRsCal();renderRsSlots(cell,ds);};
+      grid.appendChild(el);
+    }
   }
+  function renderRsSlots(cell,ds){
+    $("rsSlotHead").textContent=DAYSLONG[cell.getDay()]+" "+cell.getDate()+". "+MONTHSLONG[cell.getMonth()];
+    const day=rsAvail[ds];const slots=(day?day.slots:[]).filter(s=>s.left>0);
+    $("rsSlots").innerHTML=slots.length?slots.map(s=>`<button class="rsslot" data-utc="${s.start_utc}">${s.time} <span class="muted">${s.left} ledig</span></button>`).join(""):'<div class="muted" style="font-size:13px;padding:8px 0">Ingen ledige tider.</div>';
+    $("rsSlots").querySelectorAll(".rsslot").forEach(b=>b.onclick=()=>{
+      rsSlotUtc=b.dataset.utc;
+      $("rsSlots").querySelectorAll(".rsslot").forEach(x=>x.classList.toggle("on",x===b));
+      $("rsPick").textContent="Ny tid: "+$("rsSlotHead").textContent+" · "+b.textContent.trim().split(" ")[0];
+    });
+  }
+  $("rsPrev").onclick=()=>{rsView.setMonth(rsView.getMonth()-1);renderRsCal();};
+  $("rsNext").onclick=()=>{rsView.setMonth(rsView.getMonth()+1);renderRsCal();};
   $("rsCancel").onclick=()=>$("rsModal").classList.remove("on");
   $("rsConfirm").onclick=async()=>{
-    const slotUtc=$("rsTime").value;if(!slotUtc){$("rsErr").textContent="Velg en ledig tid.";return;}
-    try{const r=await api("reschedule",{uuid:rsUuid,slotUtc});
-      if(r.ok){$("rsModal").classList.remove("on");AVAIL=null;toast("Flytting lagt i kø.","ok");loadBookings();}
+    if(!rsSlotUtc){$("rsErr").textContent="Velg en ledig tid i kalenderen.";return;}
+    const btn=$("rsConfirm");btn.disabled=true;
+    try{const r=await api("reschedule",{uuid:rsUuid,slotUtc:rsSlotUtc});
+      if(r.ok){$("rsModal").classList.remove("on");AVAIL=null;toast("Flytting lagt i kø — Norbits oppdateres ved neste botsyklus.","ok");loadBookings();}
       else $("rsErr").textContent="Kunne ikke flytte ("+(r.error||"")+").";}
     catch(e){$("rsErr").textContent="Feil.";}
+    finally{btn.disabled=false;}
   };
 
   // ── capacity ──
