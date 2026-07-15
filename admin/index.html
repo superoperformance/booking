@@ -525,6 +525,22 @@
 
 <div class="toast" id="toast"></div>
 
+<!-- CANCEL WITH REASON -->
+<div class="modal" id="cancelModal">
+  <div class="card" style="max-width:440px">
+    <h2 style="margin-bottom:6px">Avbestill time</h2>
+    <div class="sub" id="cx-who" style="margin-bottom:14px"></div>
+    <div class="field"><label>Grunn til kunden (valgfritt)</label>
+      <textarea id="cx-reason" rows="3" placeholder="F.eks. «Kontrolløren er syk denne dagen.» — vises i e-posten kunden får."></textarea></div>
+    <div class="muted" style="font-size:12px;margin-bottom:6px">Kunden får en branded avbestillings-e-post, og timen fjernes fra Norbits ved neste botsyklus.</div>
+    <div class="err" id="cx-msg"></div>
+    <div style="display:flex;gap:10px;margin-top:14px">
+      <button class="btn ghost" id="cx-cancel" type="button" style="flex:1">Avbryt</button>
+      <button class="btn danger" id="cx-confirm" type="button" style="flex:1">Avbestill timen</button>
+    </div>
+  </div>
+</div>
+
 <!-- FORGOT PASSWORD -->
 <div class="modal" id="forgotModal">
   <div class="card" style="max-width:400px">
@@ -804,12 +820,27 @@
     const th=e.target.closest(".thead");if(th){th.parentElement.classList.toggle("open");return;}
     const dh=e.target.closest(".dayhead");if(dh){const k=dh.dataset.day;if(openDays.has(k))openDays.delete(k);else openDays.add(k);dh.parentElement.classList.toggle("open");return;}
   });
-  async function doCancel(uuid){
+  let cxUuid=null;
+  function doCancel(uuid){
+    cxUuid=uuid;
     const b=BOOKINGS.find(x=>x.calendly_uuid===uuid);
-    if(!confirm(`Avbestille timen for ${b?b.customer_name:""} (${b?b.license_plate:""})?\n\nKunden får en avbestillingse-post, og timen fjernes fra Norbits ved neste syklus.`))return;
-    try{const r=await api("cancel",{uuid});if(r.ok){toast("Avbestilling lagt i kø — bekreftes ved neste botsyklus.","ok");loadBookings();}
-      else toast("Kunne ikke avbestille.","bad");}catch(e){toast("Feil.","bad");}
+    $("cx-who").textContent = b ? (b.customer_name+" · "+b.license_plate+" · "+fmtDT(b.start_time)) : "";
+    $("cx-reason").value="";$("cx-msg").textContent="";
+    $("cancelModal").classList.add("on");
+    setTimeout(()=>$("cx-reason").focus(),50);
   }
+  $("cx-cancel").onclick=()=>$("cancelModal").classList.remove("on");
+  $("cancelModal").addEventListener("click",e=>{ if(e.target.id==="cancelModal") $("cancelModal").classList.remove("on"); });
+  $("cx-confirm").onclick=async()=>{
+    if(!cxUuid)return;
+    const reason=$("cx-reason").value.trim();
+    $("cx-confirm").disabled=true;$("cx-confirm").textContent="Avbestiller…";
+    try{const r=await api("cancel",{uuid:cxUuid,reason});
+      if(r.ok){toast("Avbestilling lagt i kø — bekreftes ved neste botsyklus.","ok");$("cancelModal").classList.remove("on");loadBookings();}
+      else toast("Kunne ikke avbestille.","bad");}
+    catch(e){toast("Feil.","bad");}
+    finally{$("cx-confirm").disabled=false;$("cx-confirm").textContent="Avbestill timen";}
+  };
 
   // ── reschedule (visual calendar) ──
   let rsUuid=null, rsView=null, rsDateSel=null, rsSlotUtc=null, rsAvail={};
