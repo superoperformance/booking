@@ -512,7 +512,7 @@
       const d=await r.json();
       AVAIL={};
       if(d&&d.days){ CAPDEFAULT=d.capacityDefault||2;
-        d.days.forEach(x=>{AVAIL[x.date]={capacity:(x.slots[0]?x.slots[0].capacity:CAPDEFAULT),slots:x.slots};}); }
+        d.days.forEach(x=>{AVAIL[x.date]={capacity:(x.slots[0]?x.slots[0].capacity:CAPDEFAULT),slots:x.slots,dayLeft:x.dayLeft};}); }
       if(d&&d.content) applyContent(d.content);
     }catch(e){ loadErr=true; AVAIL={}; }
     renderMonth();
@@ -576,7 +576,13 @@
     $("dateHead").textContent=DAYS[d.getDay()]+" "+d.getDate()+". "+MONTHS[d.getMonth()].toLowerCase();
     const info=AVAIL[ds]||{capacity:CAPDEFAULT,slots:[]};
     const cap=info.capacity;
-    $("capHint").textContent=cap+" plass"+(cap===1?"":"er")+" per tid";
+    let hint=cap+" plass"+(cap===1?"":"er")+" per tid";
+    // Show the day's remaining total when the day-max is the binding limit,
+    // so the customer sees "4 igjen i dag" rather than counting open times.
+    const dl=info.dayLeft, openSlots=(info.slots||[]).filter(s=>s.left>0).length;
+    if(typeof dl==="number" && isFinite(dl) && dl < openSlots*cap)
+      hint += " · " + dl + " igjen i dag";
+    $("capHint").textContent=hint;
     board.innerHTML="";
     const slots=info.slots||[];
     const groups=[["Formiddag",slots.filter(s=>s.time<"12:00")],["Ettermiddag",slots.filter(s=>s.time>="12:00")]];
